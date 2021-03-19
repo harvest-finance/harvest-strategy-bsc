@@ -1,0 +1,12 @@
+node_modules
+
+#Hardhat files
+cache
+artifacts
+deployments
+
+secret.json
+dev-keys.json
+package-lock.json
+
+.DS_Store
