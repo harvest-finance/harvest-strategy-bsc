@@ -3,7 +3,7 @@
 pragma solidity >=0.6.0;
 
 import "./interface/IMasterChef.sol";
-import "../../base/interface/IStrategy.sol";
+import "../interface/IStrategy.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
@@ -11,12 +11,12 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 
-import "../../base/interface/IVault.sol";
-import "../../base/upgradability/BaseUpgradeableStrategy.sol";
-import "../../base/interface/pancakeswap/IPancakePair.sol";
-import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
+import "../interface/IVault.sol";
+import "../upgradability/BaseUpgradeableStrategy.sol";
+import "../interface/pancakeswap/IPancakePair.sol";
+import "../interface/pancakeswap/IPancakeRouter02.sol";
 
-contract PancakeMasterChefLPStrategy is BaseUpgradeableStrategy {
+contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 

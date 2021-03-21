@@ -6,10 +6,10 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 import "./VenusInteractorInitializable.sol";
-import "../../base/interface/IVault.sol";
-import "../../base/upgradability/BaseUpgradeableStrategy.sol";
+import "../interface/IVault.sol";
+import "../upgradability/BaseUpgradeableStrategy.sol";
 
-import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
+import "../interface/pancakeswap/IPancakeRouter02.sol";
 
 contract VenusFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializable {
 
@@ -28,7 +28,7 @@ contract VenusFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializa
   uint256 public collateralFactorNumerator;
   uint256 public collateralFactorDenominator;
   uint256 public folds;
-  address [] public liquidationPath;
+  address[] public liquidationPath;
 
   uint256 public borrowMinThreshold = 0;
 
@@ -52,8 +52,7 @@ contract VenusFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializa
     address _pancakeswap,
     uint256 _collateralFactorNumerator,
     uint256 _collateralFactorDenominator,
-    uint256 _folds,
-    address[] calldata _liquidationPath
+    uint256 _folds
   )
   public initializer {
     BaseUpgradeableStrategy.initialize(
@@ -79,7 +78,6 @@ contract VenusFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializa
     collateralFactorNumerator = _collateralFactorNumerator;
     collateralFactorDenominator = _collateralFactorDenominator;
     folds = _folds;
-    liquidationPath = _liquidationPath;
 
     // set these tokens to be not salvagable
     unsalvagableTokens[_underlying] = true;

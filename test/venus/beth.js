@@ -12,11 +12,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusFoldStrategyMainnet_ETH");
+const Strategy = artifacts.require("VenusFoldStrategyMainnet_BETH");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Venus ETH", function() {
+describe("BSC Mainnet Venus BETH", function() {
   let accounts;
 
   // external contracts
@@ -24,6 +24,7 @@ describe("BSC Mainnet Venus ETH", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+  let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
   // parties in the protocol
   let governance;
@@ -38,12 +39,12 @@ describe("BSC Mainnet Venus ETH", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0x2170ed0880ac9a755fd29b2688956bd959f933f8");
+    underlying = await IBEP20.at("0x250632378e573c6be1ac2f97fcdf00515d0aa91b");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, eth, underlying.address], "100" + "000000000000000000");
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

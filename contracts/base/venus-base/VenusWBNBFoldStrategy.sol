@@ -9,9 +9,9 @@ import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 
 import "./VenusInteractorInitializable.sol";
-import "../../base/upgradability/BaseUpgradeableStrategy.sol";
-import "../../base/interface/IVault.sol";
-import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
+import "../upgradability/BaseUpgradeableStrategy.sol";
+import "../interface/IVault.sol";
+import "../interface/pancakeswap/IPancakeRouter02.sol";
 
 contract VenusWBNBFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializable {
 
@@ -30,6 +30,7 @@ contract VenusWBNBFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitia
   uint256 public collateralFactorNumerator;
   uint256 public collateralFactorDenominator;
   uint256 public folds;
+  address[] public liquidationPath;
 
   uint256 public borrowMinThreshold = 0;
 
@@ -235,14 +236,11 @@ contract VenusWBNBFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitia
     uint256 amountOutMin = 1;
     IBEP20(address(xvs)).safeApprove(address(pancakeswapRouterV2), 0);
     IBEP20(address(xvs)).safeApprove(address(pancakeswapRouterV2), balance);
-    address[] memory path = new address[](2);
-    path[0] = address(xvs);
-    path[1] = underlying();
 
     IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
       balance,
       amountOutMin,
-      path,
+      liquidationPath,
       address(this),
       block.timestamp
     );
