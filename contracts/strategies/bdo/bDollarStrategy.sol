@@ -83,10 +83,6 @@ contract bDollarStrategy is BaseUpgradeableStrategy {
       (bal,) = IShareRewardPool(rewardPool()).userInfo(poolId(), address(this));
   }
 
-  function exitRewardPool(uint256 bal) internal {
-    IShareRewardPool(rewardPool()).withdraw(poolId(), bal);
-  }
-
   function unsalvagableTokens(address token) public view returns (bool) {
     return (token == rewardToken() || token == underlying());
   }
@@ -106,7 +102,7 @@ contract bDollarStrategy is BaseUpgradeableStrategy {
   */
   function emergencyExit() public onlyGovernance {
     uint256 bal = rewardPoolBalance();
-    exitRewardPool(bal);
+    IShareRewardPool(rewardPool()).withdraw(poolId(), bal);
     _setPausedInvesting(true);
   }
 
@@ -126,10 +122,6 @@ contract bDollarStrategy is BaseUpgradeableStrategy {
     } else {
       pancakeswapRoutes[underlying()] = _uniswapRouteToToken0;
     }
-  }
-
-  function _claimReward() internal {
-    IShareRewardPool(rewardPool()).withdraw(poolId(), 0);
   }
 
   // We assume that all the tradings can be done on Uniswap
@@ -293,11 +285,9 @@ contract bDollarStrategy is BaseUpgradeableStrategy {
   function withdrawAllToVault() public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
-      exitRewardPool(bal);
+      IShareRewardPool(rewardPool()).withdraw(poolId(), bal);
     }
-    if (poolId()!=0) {
-      _liquidateReward();
-    }
+    _liquidateReward();
     IBEP20(underlying()).safeTransfer(vault(), IBEP20(underlying()).balanceOf(address(this)));
   }
 
@@ -355,7 +345,7 @@ contract bDollarStrategy is BaseUpgradeableStrategy {
   function doHardWork() external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
-      _claimReward();
+      IShareRewardPool(rewardPool()).withdraw(poolId(), 0);
       _liquidateReward();
     }
     investAllUnderlying();
