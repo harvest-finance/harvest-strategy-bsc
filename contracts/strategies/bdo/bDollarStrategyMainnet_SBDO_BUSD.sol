@@ -1,8 +1,8 @@
 pragma solidity 0.6.12;
 
-import "./bDollarStrategy.sol";
+import "../../base/masterchef/GeneralMasterChefStrategy.sol";
 
-contract bDollarStrategyMainnet_SBDO_BUSD is bDollarStrategy {
+contract bDollarStrategyMainnet_SBDO_BUSD is GeneralMasterChefStrategy {
 
   address public sbdo_busd_unused; // just a differentiator for the bytecode
 
@@ -15,7 +15,7 @@ contract bDollarStrategyMainnet_SBDO_BUSD is bDollarStrategy {
     address underlying = address(0xA0718093baa3E7AAE054eED71F303A4ebc1C076f); //Cake-LP
     address busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
     address sbdo = address(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
-    bDollarStrategy.initializeStrategy(
+    GeneralMasterChefStrategy.initializeStrategy(
       _storage,
       underlying,
       _vault,

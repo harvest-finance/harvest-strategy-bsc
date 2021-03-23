@@ -1,8 +1,8 @@
 pragma solidity 0.6.12;
 
-import "./bDollarStrategy.sol";
+import "../../base/masterchef/GeneralMasterChefStrategy.sol";
 
-contract bDollarStrategyMainnet_BDO_BNB is bDollarStrategy {
+contract bDollarStrategyMainnet_BDO_BNB is GeneralMasterChefStrategy {
 
   address public bdo_bnb_unused; // just a differentiator for the bytecode
 
@@ -17,7 +17,7 @@ contract bDollarStrategyMainnet_BDO_BNB is bDollarStrategy {
     address busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
     address sbdo = address(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
-    bDollarStrategy.initializeStrategy(
+    GeneralMasterChefStrategy.initializeStrategy(
       _storage,
       underlying,
       _vault,
