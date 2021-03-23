@@ -330,7 +330,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       // for the peace of mind (in case something gets changed in between)
       uint256 needToWithdraw = amount.sub(entireBalance);
       uint256 toWithdraw = MathUpgradeable.min(rewardPoolBalance(), needToWithdraw);
-      IMasterChef(rewardPool()).withdraw(poolId(), toWithdraw);
+      exitRewardPool(toWithdraw);
     }
 
     IBEP20(underlying()).safeTransfer(vault(), amount);
