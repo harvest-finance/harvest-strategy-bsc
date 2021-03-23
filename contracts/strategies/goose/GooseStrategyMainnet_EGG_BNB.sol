@@ -1,8 +1,8 @@
 pragma solidity 0.6.12;
 
-import "./GooseStrategy.sol";
+import "../../base/masterchef/GeneralMasterChefStrategy.sol";
 
-contract GooseStrategyMainnet_EGG_BNB is GooseStrategy {
+contract GooseStrategyMainnet_EGG_BNB is GeneralMasterChefStrategy {
 
   address public egg_bnb_unused; // just a differentiator for the bytecode
 
@@ -15,7 +15,7 @@ contract GooseStrategyMainnet_EGG_BNB is GooseStrategy {
     address underlying = address(0xd1B59D11316E87C3a0A069E80F590BA35cD8D8D3); //Cake-LP
     address egg = address(0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
-    GooseStrategy.initializeStrategy(
+    GeneralMasterChefStrategy.initializeStrategy(
       _storage,
       underlying,
       _vault,

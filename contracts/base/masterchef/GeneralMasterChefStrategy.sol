@@ -2,7 +2,8 @@
 
 pragma solidity >=0.6.0;
 
-import "../../base/pancake-base/interface/IMasterChef.sol";
+import "./interface/IMasterChef.sol";
+import "../interface/IStrategy.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
@@ -10,12 +11,12 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 
-import "../../base/interface/IVault.sol";
-import "../../base/upgradability/BaseUpgradeableStrategy.sol";
-import "../../base/interface/pancakeswap/IPancakePair.sol";
-import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
+import "../interface/IVault.sol";
+import "../upgradability/BaseUpgradeableStrategy.sol";
+import "../interface/pancakeswap/IPancakePair.sol";
+import "../interface/pancakeswap/IPancakeRouter02.sol";
 
-contract GooseStrategy is BaseUpgradeableStrategy {
+contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
@@ -23,15 +24,14 @@ contract GooseStrategy is BaseUpgradeableStrategy {
 
   // additional storage slots (on top of BaseUpgradeableStrategy ones) are defined here
   bytes32 internal constant _POOLID_SLOT = 0x3fd729bfa2e28b7806b03a6e014729f59477b530f995be4d51defc9dad94810b;
-
-  // boolean to determine if underlying is single asset or LP token
-  bool public isLpToken;
+  bytes32 internal constant _IS_LP_ASSET_SLOT = 0xc2f3dabf55b1bdda20d5cf5fcba9ba765dfc7c9dbaf28674ce46d43d60d58768;
 
   // this would be reset on each upgrade
   mapping (address => address[]) public pancakeswapRoutes;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
+    assert(_IS_LP_ASSET_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.isLpAsset")) - 1));
   }
 
   function initializeStrategy(
@@ -61,9 +61,8 @@ contract GooseStrategy is BaseUpgradeableStrategy {
     (_lpt,,,) = IMasterChef(rewardPool()).poolInfo(_poolID);
     require(_lpt == underlying(), "Pool Info does not match underlying");
     _setPoolId(_poolID);
-    _setIsLpToken(_isLpToken);
 
-    if (isLpToken) {
+    if (_isLpToken) {
       address uniLPComponentToken0 = IPancakePair(underlying()).token0();
       address uniLPComponentToken1 = IPancakePair(underlying()).token1();
 
@@ -73,6 +72,8 @@ contract GooseStrategy is BaseUpgradeableStrategy {
     } else {
       pancakeswapRoutes[underlying()] = new address[](0);
     }
+
+    setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
   function depositArbCheck() public view returns(bool) {
@@ -109,20 +110,14 @@ contract GooseStrategy is BaseUpgradeableStrategy {
   /*
   *   Resumes the ability to invest into the underlying reward pools
   */
-
   function continueInvesting() public onlyGovernance {
     _setPausedInvesting(false);
   }
 
-  function setLiquidationPathsOnPancake(address [] memory _uniswapRouteToToken0, address [] memory _uniswapRouteToToken1) public onlyGovernance {
-    if (isLpToken) {
-      address uniLPComponentToken0 = IPancakePair(underlying()).token0();
-      address uniLPComponentToken1 = IPancakePair(underlying()).token1();
-      pancakeswapRoutes[uniLPComponentToken0] = _uniswapRouteToToken0;
-      pancakeswapRoutes[uniLPComponentToken1] = _uniswapRouteToToken1;
-    } else {
-      pancakeswapRoutes[underlying()] = _uniswapRouteToToken0;
-    }
+  function setLiquidationPath(address _token, address [] memory _route) public onlyGovernance {
+    require(_route[0] == rewardToken(), "Path should start with rewardToken");
+    require(_route[_route.length-1] == _token, "Path should end with given Token");
+    pancakeswapRoutes[_token] = _route;
   }
 
   // We assume that all the tradings can be done on Uniswap
@@ -137,117 +132,56 @@ contract GooseStrategy is BaseUpgradeableStrategy {
     notifyProfitInRewardToken(rewardBalance);
     uint256 remainingRewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
 
-    if (remainingRewardBalance > 0) {
-      if (isLpToken) {
-        _liquidateLpAssets(remainingRewardBalance);
-      } else {
-        _liquidateSingleAsset(remainingRewardBalance);
-      }
+    if (remainingRewardBalance == 0) {
+      return;
     }
-  }
 
-  // Liquidate Cake into the single underlying asset (non-LP tokens), no-op if Cake is the underlying
-  function _liquidateSingleAsset(uint256 remainingRewardBalance) internal {
-    if (underlying() != rewardToken()) {
-      address[] memory routesToken0 = pancakeswapRoutes[underlying()];
-
-      uint256 amountOutMin = 1;
-
-      // allow PancakeSwap to sell our reward
-      IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, 0);
-      IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, remainingRewardBalance);
-
-      // sell Uni to token2
-      // we can accept 1 as minimum because this is called only by a trusted role
-      IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-        remainingRewardBalance,
-        amountOutMin,
-        routesToken0,
-        address(this),
-        block.timestamp
-      );
-    }
-  }
-
-  // Liquidate Cake into underlying LP tokens, only do one swap if Cake/WBNB LP is the underlying
-  function _liquidateLpAssets(uint256 remainingRewardBalance) internal {
-    address uniLPComponentToken0 = IPancakePair(underlying()).token0();
-    address uniLPComponentToken1 = IPancakePair(underlying()).token1();
-
-    address[] memory routesToken0 = pancakeswapRoutes[address(uniLPComponentToken0)];
-    address[] memory routesToken1 = pancakeswapRoutes[address(uniLPComponentToken1)];
-
-    uint256 amountOutMin = 1;
-
-    // allow PancakeSwap to sell our reward
+    // allow Uniswap to sell our reward
     IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, 0);
     IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, remainingRewardBalance);
 
-    uint256 token0Amount;
-    uint256 token1Amount;
+    // we can accept 1 as minimum because this is called only by a trusted role
+    uint256 amountOutMin = 1;
 
-    if (
-      uniLPComponentToken1 == rewardToken()  // we are dealing with CAKE/WBNB LP
-      && routesToken0.length > 1 // we have a route to do the swap
-    ) {
-      token1Amount = remainingRewardBalance / 2; // 1/2 of CAKE is saved for LP
-      uint256 toToken0 = remainingRewardBalance.sub(token1Amount); // other 1/2 is liquidated
+    if (isLpAsset()) {
+      address uniLPComponentToken0 = IPancakePair(underlying()).token0();
+      address uniLPComponentToken1 = IPancakePair(underlying()).token1();
 
-      // sell Cake to token1
-      // we can accept 1 as minimum because this is called only by a trusted role
-      IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-        toToken0,
-        amountOutMin,
-        routesToken0,
-        address(this),
-        block.timestamp
-      );
-      token0Amount = IBEP20(uniLPComponentToken0).balanceOf(address(this));
-
-      // Only approve WBNB, CAKE has already been approved at this point
-      IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
-      IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
-
-      // we provide liquidity to PancakeSwap
-      uint256 liquidity;
-      (,,liquidity) = IPancakeRouter02(pancakeswapRouterV2).addLiquidity(
-        uniLPComponentToken0,
-        uniLPComponentToken1,
-        token0Amount,
-        token1Amount,
-        1,  // we are willing to take whatever the pair gives us
-        1,  // we are willing to take whatever the pair gives us
-        address(this),
-        block.timestamp
-      );
-    } else if (
-      routesToken0.length > 1 // and we have a route to do the swap
-      && routesToken1.length > 1 // and we have a route to do the swap
-    ) {
-      uint256 toToken0 = remainingRewardBalance / 2;
+      uint256 toToken0 = remainingRewardBalance.div(2);
       uint256 toToken1 = remainingRewardBalance.sub(toToken0);
 
-      // sell Cake to token0
-      // we can accept 1 as minimum because this is called only by a trusted role
-      IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-        toToken0,
-        amountOutMin,
-        routesToken0,
-        address(this),
-        block.timestamp
-      );
-      token0Amount = IBEP20(uniLPComponentToken0).balanceOf(address(this));
+      uint256 token0Amount;
 
-      // sell Cake to token1
-      // we can accept 1 as minimum because this is called only by a trusted role
-      IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-        toToken1,
-        amountOutMin,
-        routesToken1,
-        address(this),
-        block.timestamp
-      );
-      token1Amount = IBEP20(uniLPComponentToken1).balanceOf(address(this));
+      if (pancakeswapRoutes[uniLPComponentToken0].length > 1) {
+        // if we need to liquidate the token0
+        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+          toToken0,
+          amountOutMin,
+          pancakeswapRoutes[uniLPComponentToken0],
+          address(this),
+          block.timestamp
+        );
+        token0Amount = IBEP20(uniLPComponentToken0).balanceOf(address(this));
+      } else {
+        // otherwise we assme token0 is the reward token itself
+        token0Amount = toToken0;
+      }
+
+      uint256 token1Amount;
+
+      if (pancakeswapRoutes[uniLPComponentToken1].length > 1) {
+        // sell reward token to token1
+        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+          toToken1,
+          amountOutMin,
+          pancakeswapRoutes[uniLPComponentToken1],
+          address(this),
+          block.timestamp
+        );
+        token1Amount = IBEP20(uniLPComponentToken1).balanceOf(address(this));
+      } else {
+        token1Amount = toToken1;
+      }
 
       // provide token1 and token2 to SUSHI
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
@@ -256,7 +190,7 @@ contract GooseStrategy is BaseUpgradeableStrategy {
       IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, token1Amount);
 
-      // we provide liquidity to PancakeSwap
+      // we provide liquidity to sushi
       uint256 liquidity;
       (,,liquidity) = IPancakeRouter02(pancakeswapRouterV2).addLiquidity(
         uniLPComponentToken0,
@@ -268,6 +202,16 @@ contract GooseStrategy is BaseUpgradeableStrategy {
         address(this),
         block.timestamp
       );
+    } else {
+      if (underlying() != rewardToken()) {
+        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+          remainingRewardBalance,
+          amountOutMin,
+          pancakeswapRoutes[underlying()],
+          address(this),
+          block.timestamp
+        );
+      }
     }
   }
 
@@ -290,7 +234,7 @@ contract GooseStrategy is BaseUpgradeableStrategy {
       uint256 bal = rewardPoolBalance();
       IMasterChef(rewardPool()).withdraw(poolId(), bal);
     }
-    if (underlying()!=rewardToken()) {
+    if (underlying() != rewardToken()) {
       _liquidateReward();
     }
     IBEP20(underlying()).safeTransfer(vault(), IBEP20(underlying()).balanceOf(address(this)));
@@ -351,11 +295,8 @@ contract GooseStrategy is BaseUpgradeableStrategy {
   function doHardWork() external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
-      uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
       IMasterChef(rewardPool()).withdraw(poolId(), 0);
-      rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
       _liquidateReward();
-      rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
     }
 
     investAllUnderlying();
@@ -376,10 +317,6 @@ contract GooseStrategy is BaseUpgradeableStrategy {
     _setSellFloor(floor);
   }
 
-  function _setIsLpToken(bool _isLpToken) internal {
-    isLpToken = _isLpToken;
-  }
-
   // masterchef rewards pool ID
   function _setPoolId(uint256 _value) internal {
     setUint256(_POOLID_SLOT, _value);
@@ -389,15 +326,19 @@ contract GooseStrategy is BaseUpgradeableStrategy {
     return getUint256(_POOLID_SLOT);
   }
 
+  function isLpAsset() public view returns (bool) {
+    return getBoolean(_IS_LP_ASSET_SLOT);
+  }
+
   function finalizeUpgrade() external onlyGovernance {
     _finalizeUpgrade();
     // reset the liquidation paths
     // they need to be re-set manually
-    address uniLPComponentToken0 = IPancakePair(underlying()).token0();
-    address uniLPComponentToken1 = IPancakePair(underlying()).token1();
-
-    // these would be required to be initialized separately by governance
-    pancakeswapRoutes[uniLPComponentToken0] = new address[](0);
-    pancakeswapRoutes[uniLPComponentToken1] = new address[](0);
+    if (isLpAsset()) {
+      pancakeswapRoutes[IPancakePair(underlying()).token0()] = new address[](0);
+      pancakeswapRoutes[IPancakePair(underlying()).token1()] = new address[](0);
+    } else {
+      pancakeswapRoutes[underlying()] = new address[](0);
+    }
   }
 }
