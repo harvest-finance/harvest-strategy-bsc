@@ -1,13 +1,18 @@
 // Utilities
 const Utils = require("../utilities/Utils.js");
-const { impersonates, setupCoreProtocol, depositVault } = require("../utilities/hh-utils.js");
+const {
+  impersonates,
+  setupCoreProtocol,
+  depositVault,
+  swapBNBToToken
+} = require("../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("PancakeMasterChefLPStrategy");
+const Strategy = artifacts.require("PancakeStrategyMainnet_CAKE");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
@@ -18,7 +23,7 @@ describe("BSC Mainnet Pancake CAKE", function() {
   let underlying;
 
   // external setup
-  let underlyingWhale = "0xb1256d6b31e4ae87da1d56e5890c66be7f1c038e";0xb1256d6b31e4ae87da1d56e5890c66be7f1c038e
+  let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
   // parties in the protocol
   let governance;
@@ -32,20 +37,14 @@ describe("BSC Mainnet Pancake CAKE", function() {
   let vault;
   let strategy;
 
-  let masterChef = "0x73feaa1ee314f8c655e354234017be2193c9e24e";
-
   async function setupExternalContracts() {
     underlying = await IBEP20.at("0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    let etherGiver = accounts[9];
-    // Give whale some ether to make sure the following actions are good
-    await send.ether(etherGiver, underlyingWhale, "1" + "000000000000000000");
-
-    farmerBalance = await underlying.balanceOf(underlyingWhale);
-    await underlying.transfer(farmer1, farmerBalance, { from: underlyingWhale });
+    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    farmerBalance = await underlying.balanceOf(farmer1);
   }
 
   before(async function() {
@@ -55,7 +54,7 @@ describe("BSC Mainnet Pancake CAKE", function() {
     farmer1 = accounts[1];
 
     // impersonate accounts
-    await impersonates([governance, underlyingWhale]);
+    await impersonates([governance]);
 
     let etherGiver = accounts[9];
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
@@ -65,15 +64,6 @@ describe("BSC Mainnet Pancake CAKE", function() {
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "strategyArtifactIsUpgradable": true,
-      "strategyArgs": [
-        "storageAddr",
-        underlying.address,
-        "vaultAddr",
-        masterChef,
-        underlying.address,
-        0,
-        false
-      ],
       "underlying": underlying,
       "governance": governance,
     });

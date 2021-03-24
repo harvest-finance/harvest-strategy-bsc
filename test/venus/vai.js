@@ -1,6 +1,11 @@
 // Utilities
 const Utils = require("../utilities/Utils.js");
-const { impersonates, setupCoreProtocol, depositVault } = require("../utilities/hh-utils.js");
+const {
+  impersonates,
+  setupCoreProtocol,
+  depositVault,
+  swapBNBToToken
+} = require("../utilities/hh-utils.js");
 
 const ethers = require("ethers");
 
@@ -9,7 +14,7 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusVAIStrategy");
+const Strategy = artifacts.require("VenusVAIStrategyMainnet");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
@@ -20,7 +25,8 @@ describe("BSC Mainnet Venus VAI", function() {
   let underlying;
 
   // external setup
-  let underlyingWhale = "0x631Fc1EA2270e98fbD9D92658eCe0F5a269Aa161";
+  let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+  let busd = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
   let xvsDistributor = "0x631Fc1EA2270e98fbD9D92658eCe0F5a269Aa161";
 
   // parties in the protocol
@@ -35,7 +41,6 @@ describe("BSC Mainnet Venus VAI", function() {
   let vault;
   let strategy;
 
-  let pancakeRouter = "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F";
   let venus = "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63";
   let vvaiVault = "0x0667Eed0a0aAb930af74a3dfeDD263A73994f216";
 
@@ -45,12 +50,8 @@ describe("BSC Mainnet Venus VAI", function() {
   }
 
   async function setupBalance(){
-    let etherGiver = accounts[9];
-    // Give whale some ether to make sure the following actions are good
-    await send.ether(etherGiver, underlyingWhale, "1" + "000000000000000000");
-
-    farmerBalance = await underlying.balanceOf(underlyingWhale);
-    await underlying.transfer(farmer1, farmerBalance, { from: underlyingWhale });
+    await swapBNBToToken(farmer1, [wbnb, busd, underlying.address], "100" + "000000000000000000");
+    farmerBalance = await underlying.balanceOf(farmer1);
   }
 
   before(async function() {
@@ -60,7 +61,7 @@ describe("BSC Mainnet Venus VAI", function() {
     farmer1 = accounts[1];
 
     // impersonate accounts
-    await impersonates([governance, underlyingWhale, xvsDistributor]);
+    await impersonates([governance, xvsDistributor]);
 
     let etherGiver = accounts[9];
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
@@ -69,11 +70,7 @@ describe("BSC Mainnet Venus VAI", function() {
     [controller, vault, strategy] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
-      "strategyArgs": [
-        "storageAddr",
-        "vaultAddr",
-        pancakeRouter
-      ],
+      "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
     });

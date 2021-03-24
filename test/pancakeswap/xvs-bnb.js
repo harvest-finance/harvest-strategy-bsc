@@ -1,24 +1,31 @@
 // Utilities
 const Utils = require("../utilities/Utils.js");
-const { impersonates, setupCoreProtocol, depositVault } = require("../utilities/hh-utils.js");
+const {
+  impersonates,
+  setupCoreProtocol,
+  depositVault,
+  swapBNBToToken,
+  addLiquidity
+} = require("../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusFoldStrategy");
+const Strategy = artifacts.require("PancakeStrategyMainnet_XVS_BNB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Venus DAI", function() {
+describe("BSC Mainnet Pancake XVS/BNB", function() {
   let accounts;
 
   // external contracts
   let underlying;
 
   // external setup
-  let underlyingWhale = "0xefb826ab5d566db9d5af50e17b0cec5a60c18aa3";
+  let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+  let token1Addr = "0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63";
 
   // parties in the protocol
   let governance;
@@ -32,25 +39,17 @@ describe("BSC Mainnet Venus DAI", function() {
   let vault;
   let strategy;
 
-  let vtoken = "0x334b3eCB4DCa3593BCCC3c7EBD1A1C1d1780FBF1";
-  let comptroller = "0xfD36E2c2a6789Db23113685031d7F16329158384";
-  let venus = "0xcf6bb5389c92bdda8a3747ddb454cb7a64626c63";
-  let pancakeRouter = "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F";
-  let wbnb = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c";
-  let liquidationPath = [venus,wbnb,"0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3"];
-
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3");
+    underlying = await IBEP20.at("0x41182c32F854dd97bA0e0B1816022e0aCB2fc0bb");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    let etherGiver = accounts[9];
-    // Give whale some ether to make sure the following actions are good
-    await send.ether(etherGiver, underlyingWhale, "1" + "000000000000000000");
-
-    farmerBalance = await underlying.balanceOf(underlyingWhale);
-    await underlying.transfer(farmer1, farmerBalance, { from: underlyingWhale });
+    token1 = await IBEP20.at(token1Addr);
+    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000");
+    farmerToken1Balance = await token1.balanceOf(farmer1);
+    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance);
+    farmerBalance = await underlying.balanceOf(farmer1);
   }
 
   before(async function() {
@@ -60,7 +59,7 @@ describe("BSC Mainnet Venus DAI", function() {
     farmer1 = accounts[1];
 
     // impersonate accounts
-    await impersonates([governance, underlyingWhale]);
+    await impersonates([governance]);
 
     let etherGiver = accounts[9];
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
@@ -70,22 +69,11 @@ describe("BSC Mainnet Venus DAI", function() {
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "strategyArtifactIsUpgradable": true,
-      "strategyArgs": [
-        "storageAddr",
-        underlying.address,
-        vtoken,
-        "vaultAddr",
-        comptroller,
-        venus,
-        pancakeRouter,
-        550,
-        1000,
-        0, //Rewards to low for beneficial folds
-        liquidationPath
-      ],
       "underlying": underlying,
       "governance": governance,
     });
+
+    await strategy.setSellFloor(0, {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
@@ -103,6 +91,7 @@ describe("BSC Mainnet Venus DAI", function() {
       let newSharePrice;
       for (let i = 0; i < hours; i++) {
         console.log("loop ", i);
+
         oldSharePrice = new BigNumber(await vault.getPricePerFullShare());
         await controller.doHardWork(vault.address, { from: governance });
         newSharePrice = new BigNumber(await vault.getPricePerFullShare());
@@ -123,6 +112,8 @@ describe("BSC Mainnet Venus DAI", function() {
       console.log("earned!");
       console.log("APR:", apr*100, "%");
       console.log("APY:", (apy-1)*100, "%");
+
+      await strategy.withdrawAllToVault({from:governance}); // making sure can withdraw all for a next switch
 
     });
   });
