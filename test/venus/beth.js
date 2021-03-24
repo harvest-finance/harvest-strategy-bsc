@@ -69,6 +69,8 @@ describe("BSC Mainnet Venus BETH", function() {
       "governance": governance,
     });
 
+    await strategy.setSellFloor(0, {from:governance});
+
     // whale send underlying to farmers
     await setupBalance();
   });

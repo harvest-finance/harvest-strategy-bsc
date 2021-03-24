@@ -106,8 +106,8 @@ describe("BSC Mainnet Pancake LINK/BNB", function() {
       let farmerNewBalance = new BigNumber(await underlying.balanceOf(farmer1));
       Utils.assertBNGt(farmerNewBalance, farmerOldBalance);
 
-      apr = (farmerNewBalance.toFixed()/farmerOldBalance.toFixed()-1)/(24/(blocksPerHour*hours/1200))*365;
-      apy = ((farmerNewBalance.toFixed()/farmerOldBalance.toFixed()-1)/(24/(blocksPerHour*hours/1200))+1)**365;
+      apr = (farmerNewBalance.toFixed()/farmerOldBalance.toFixed()-1)*(24/(blocksPerHour*hours/1200))*365;
+      apy = ((farmerNewBalance.toFixed()/farmerOldBalance.toFixed()-1)*(24/(blocksPerHour*hours/1200))+1)**365;
 
       console.log("earned!");
       console.log("APR:", apr*100, "%");
