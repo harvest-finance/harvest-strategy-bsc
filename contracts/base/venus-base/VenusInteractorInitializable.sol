@@ -265,7 +265,7 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
     _setAddress(_INTERACTOR_UNDERLYING_SLOT, _address);
   }
 
-  function _underlying() public virtual view returns (address) {
+  function _underlying() internal virtual view returns (address) {
     return _getAddress(_INTERACTOR_UNDERLYING_SLOT);
   }
 
