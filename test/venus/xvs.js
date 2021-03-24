@@ -1,13 +1,18 @@
 // Utilities
 const Utils = require("../utilities/Utils.js");
-const { impersonates, setupCoreProtocol, depositVault } = require("../utilities/hh-utils.js");
+const {
+  impersonates,
+  setupCoreProtocol,
+  depositVault,
+  swapBNBToToken
+} = require("../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusFoldStrategy");
+const Strategy = artifacts.require("VenusFoldStrategyMainnet_XVS");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
@@ -18,7 +23,7 @@ describe("BSC Mainnet Venus XVS", function() {
   let underlying;
 
   // external setup
-  let underlyingWhale = "0x4982085c9e2f89f2ecb8131eca71afad896e89cb";
+  let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 
   // parties in the protocol
   let governance;
@@ -32,25 +37,14 @@ describe("BSC Mainnet Venus XVS", function() {
   let vault;
   let strategy;
 
-  let vtoken = "0x151b1e2635a717bcdc836ecd6fbb62b674fe3e1d";
-  let comptroller = "0xfD36E2c2a6789Db23113685031d7F16329158384";
-  let venus = "0xcf6bb5389c92bdda8a3747ddb454cb7a64626c63";
-  let pancakeRouter = "0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F";
-  let wbnb = "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c";
-  let liquidationPath = [];
-
   async function setupExternalContracts() {
     underlying = await IBEP20.at("0xcf6bb5389c92bdda8a3747ddb454cb7a64626c63");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    let etherGiver = accounts[9];
-    // Give whale some ether to make sure the following actions are good
-    await send.ether(etherGiver, underlyingWhale, "1" + "000000000000000000");
-
-    farmerBalance = await underlying.balanceOf(underlyingWhale);
-    await underlying.transfer(farmer1, farmerBalance, { from: underlyingWhale });
+    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    farmerBalance = await underlying.balanceOf(farmer1);
   }
 
   before(async function() {
@@ -60,7 +54,7 @@ describe("BSC Mainnet Venus XVS", function() {
     farmer1 = accounts[1];
 
     // impersonate accounts
-    await impersonates([governance, underlyingWhale]);
+    await impersonates([governance]);
 
     let etherGiver = accounts[9];
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
@@ -70,22 +64,11 @@ describe("BSC Mainnet Venus XVS", function() {
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "strategyArtifactIsUpgradable": true,
-      "strategyArgs": [
-        "storageAddr",
-        underlying.address,
-        vtoken,
-        "vaultAddr",
-        comptroller,
-        venus,
-        pancakeRouter,
-        550,
-        1000,
-        0, //Borrow cap reached, not able to fold
-        liquidationPath
-      ],
       "underlying": underlying,
       "governance": governance,
     });
+
+    await strategy.setSellFloor(0, {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();

@@ -4,7 +4,8 @@ const {
   impersonates,
   setupCoreProtocol,
   depositVault,
-  swapBNBToToken
+  swapBNBToToken,
+  addLiquidity
 } = require("../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
@@ -12,11 +13,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusFoldStrategyMainnet_ETH");
+const Strategy = artifacts.require("PancakeStrategyMainnet_BTCB_BNB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Venus ETH", function() {
+describe("BSC Mainnet Pancake BTCB/BNB", function() {
   let accounts;
 
   // external contracts
@@ -24,6 +25,7 @@ describe("BSC Mainnet Venus ETH", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+  let token1Addr = "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c";
 
   // parties in the protocol
   let governance;
@@ -38,12 +40,15 @@ describe("BSC Mainnet Venus ETH", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0x2170ed0880ac9a755fd29b2688956bd959f933f8");
+    underlying = await IBEP20.at("0x7561EEe90e24F3b348E1087A005F78B4c8453524");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    token1 = await IBEP20.at(token1Addr);
+    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000");
+    farmerToken1Balance = await token1.balanceOf(farmer1);
+    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -86,6 +91,7 @@ describe("BSC Mainnet Venus ETH", function() {
       let newSharePrice;
       for (let i = 0; i < hours; i++) {
         console.log("loop ", i);
+
         oldSharePrice = new BigNumber(await vault.getPricePerFullShare());
         await controller.doHardWork(vault.address, { from: governance });
         newSharePrice = new BigNumber(await vault.getPricePerFullShare());
@@ -106,6 +112,8 @@ describe("BSC Mainnet Venus ETH", function() {
       console.log("earned!");
       console.log("APR:", apr*100, "%");
       console.log("APY:", (apy-1)*100, "%");
+
+      await strategy.withdrawAllToVault({from:governance}); // making sure can withdraw all for a next switch
 
     });
   });
