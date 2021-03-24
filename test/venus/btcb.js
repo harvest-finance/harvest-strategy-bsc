@@ -68,6 +68,8 @@ describe("BSC Mainnet Venus BTCB", function() {
       "governance": governance,
     });
 
+    await strategy.setSellFloor(0, {from:governance});
+
     // whale send underlying to farmers
     await setupBalance();
   });
