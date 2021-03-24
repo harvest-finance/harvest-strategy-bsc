@@ -17,12 +17,8 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
-  IVAIVault public rewardPoolContract;
-  address public pancakeRouterV2;
+  address constant public pancakeRouterV2 = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
   address[] public liquidationPath;
-
-  // These tokens cannot be claimed by the controller
-  mapping(address => bool) public unsalvagableTokens;
 
   constructor() public BaseUpgradeableStrategy() {
   }
@@ -36,7 +32,6 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
     address busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
     address vai = address(0x4BD17003473389A42DAF6a0a729f6Fdb328BbBd7);
     address venus = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
-    pancakeRouterV2 = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
 
     BaseUpgradeableStrategy.initialize(
       _storage,
@@ -50,17 +45,16 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
       1e16, // sell floor
       12 hours // implementation change delay
     );
-    rewardPoolContract = IVAIVault(rewardPool());
 
     liquidationPath = [venus, wbnb, busd, vai];
-
-    unsalvagableTokens[vai] = true;
-    unsalvagableTokens[venus] = true;
   }
-
 
   function depositArbCheck() public view returns(bool) {
     return true;
+  }
+
+  function unsalvagableTokens(address token) public view returns (bool) {
+    return (token == rewardToken() || token == underlying());
   }
 
   /*
@@ -69,8 +63,8 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
   *   The function is only used for emergency to exit the pool
   */
   function emergencyExit() public onlyGovernance {
-    (uint256 amountInvested,) = rewardPoolContract.userInfo(address(this));
-    rewardPoolContract.withdraw(amountInvested);
+    (uint256 amountInvested,) = IVAIVault(rewardPool()).userInfo(address(this));
+    IVAIVault(rewardPool()).withdraw(amountInvested);
     _setPausedInvesting(true);
   }
 
@@ -124,7 +118,7 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
     if(underlyingBalance > 0) {
       IBEP20(underlying()).safeApprove(rewardPool(), 0);
       IBEP20(underlying()).safeApprove(rewardPool(), underlyingBalance);
-      rewardPoolContract.deposit(underlyingBalance);
+      IVAIVault(rewardPool()).deposit(underlyingBalance);
     }
   }
 
@@ -133,9 +127,9 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
   */
   function withdrawAllToVault() public restricted {
     if (rewardPool() != address(0)) {
-      (uint256 amountInvested,) = rewardPoolContract.userInfo(address(this));
+      (uint256 amountInvested,) = IVAIVault(rewardPool()).userInfo(address(this));
       if (amountInvested > 0) {
-        rewardPoolContract.withdraw(amountInvested);
+        IVAIVault(rewardPool()).withdraw(amountInvested);
       }
     }
     _liquidateReward();
@@ -155,8 +149,8 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
       // While we have the check above, we still using SafeMath below
       // for the peace of mind (in case something gets changed in between)
       uint256 needToWithdraw = amount.sub(underlyingBalance);
-      (uint256 amountInvested,) = rewardPoolContract.userInfo(address(this));
-      rewardPoolContract.withdraw(MathUpgradeable.min(amountInvested, needToWithdraw));
+      (uint256 amountInvested,) = IVAIVault(rewardPool()).userInfo(address(this));
+      IVAIVault(rewardPool()).withdraw(MathUpgradeable.min(amountInvested, needToWithdraw));
     }
     IBEP20(underlying()).safeTransfer(vault(), amount);
   }
@@ -173,7 +167,7 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
     // both are in the units of "underlying"
     // The second part is needed because there is the emergency exit mechanism
     // which would break the assumption that all the funds are always inside of the reward pool
-    (uint256 amountInvested,) = rewardPoolContract.userInfo(address(this));
+    (uint256 amountInvested,) = IVAIVault(rewardPool()).userInfo(address(this));
     return amountInvested.add(IBEP20(underlying()).balanceOf(address(this)));
   }
 
@@ -184,7 +178,7 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
   */
   function salvage(address recipient, address token, uint256 amount) external onlyControllerOrGovernance {
      // To make sure that governance cannot come in and take away the coins
-    require(!unsalvagableTokens[token], "token is defined as not salvagable");
+    require(!unsalvagableTokens(token), "token is defined as not salvagable");
     IBEP20(token).safeTransfer(recipient, amount);
   }
 
@@ -197,8 +191,8 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
   *   when the investing is being paused by governance.
   */
   function doHardWork() external onlyNotPausedInvesting restricted {
-    rewardPoolContract.updatePendingRewards();
-    rewardPoolContract.claim();
+    IVAIVault(rewardPool()).updatePendingRewards();
+    IVAIVault(rewardPool()).claim();
     _liquidateReward();
     investAllUnderlying();
   }
@@ -210,4 +204,10 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
     _setSellFloor(floor);
   }
 
+  function finalizeUpgrade() external onlyGovernance {
+    _finalizeUpgrade();
+    // reset the liquidation paths
+    // they need to be re-set manually
+    liquidationPath = new address[](0);
+  }
 }

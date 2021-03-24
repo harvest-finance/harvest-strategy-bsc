@@ -4,7 +4,7 @@ import "../../base/venus-base/VenusFoldStrategy.sol";
 
 contract VenusFoldStrategyMainnet_BETH is VenusFoldStrategy {
 
-  address public eth_unused; // just a differentiator for the bytecode
+  address public beth_unused; // just a differentiator for the bytecode
 
   constructor() public {}
 
@@ -18,7 +18,6 @@ contract VenusFoldStrategyMainnet_BETH is VenusFoldStrategy {
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     address vbeth = address(0x972207A639CC1B374B893cc33Fa251b55CEB7c07);
     address comptroller = address(0xfD36E2c2a6789Db23113685031d7F16329158384);
-    address pancakeRouter = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
     VenusFoldStrategy.initializeStrategy(
       _storage,
       underlying,
@@ -26,10 +25,9 @@ contract VenusFoldStrategyMainnet_BETH is VenusFoldStrategy {
       _vault,
       comptroller,
       venus,
-      pancakeRouter,
       550, //collateralFactorNumerator
       1000, //collateralFactorDenominator
-      3 //Folds
+      5 //Folds
     );
     liquidationPath = [venus, wbnb, eth, underlying];
   }
