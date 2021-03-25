@@ -12,7 +12,7 @@ contract VenusFoldStrategyMainnet_BTCB is VenusFoldStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c); //BTCB
+    address underlying = address(0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c);
     address venus = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     address vbtc = address(0x882C173bC7Ff3b7786CA16dfeD3DFFfb9Ee7847B);

@@ -12,7 +12,7 @@ contract PancakeStrategyMainnet_CAKE_BNB is PancakeMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xA527a61703D82139F8a06Bc30097cC9CAA2df5A6); //Cake-LP
+    address underlying = address(0xA527a61703D82139F8a06Bc30097cC9CAA2df5A6);
     address cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     PancakeMasterChefStrategy.initializeStrategy(
@@ -24,7 +24,6 @@ contract PancakeStrategyMainnet_CAKE_BNB is PancakeMasterChefStrategy {
       1,  // Pool id
       true // is LP asset
     );
-    // cake is token0, wbnb is token1
     pancakeswapRoutes[wbnb] = [cake, wbnb];
   }
 }

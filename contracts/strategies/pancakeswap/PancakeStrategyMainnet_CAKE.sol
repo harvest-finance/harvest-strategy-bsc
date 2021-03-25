@@ -12,7 +12,7 @@ contract PancakeStrategyMainnet_CAKE is PancakeMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82); //CAKE
+    address underlying = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
     PancakeMasterChefStrategy.initializeStrategy(
       _storage,
       underlying,
