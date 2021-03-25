@@ -12,7 +12,7 @@ contract VenusFoldStrategyMainnet_XVS is VenusFoldStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63); //XVS
+    address underlying = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
     address venus = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
     address vxvs = address(0x151B1e2635A717bcDc836ECd6FbB62B674FE3E1D);
     address comptroller = address(0xfD36E2c2a6789Db23113685031d7F16329158384);
