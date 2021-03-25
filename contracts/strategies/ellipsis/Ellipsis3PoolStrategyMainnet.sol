@@ -10,7 +10,7 @@ contract Ellipsis3PoolStrategyMainnet is Ellipsis3PoolStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xaF4dE8E872131AE328Ce21D909C74705d3Aaf452); //3EPS
+    address underlying = address(0xaF4dE8E872131AE328Ce21D909C74705d3Aaf452);
     address eps = address(0xA7f552078dcC247C2684336020c03648500C6d9F);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     address liquidityPool = address(0x160CAed03795365F3A589f10C379FfA7d75d4E76);

@@ -107,7 +107,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
     pancake_EPS2BUSD = _route;
   }
 
-  // We assume that all the tradings can be done on Uniswap
+  // We assume that all the tradings can be done on Pancakeswap
   function _liquidateReward() internal {
     uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
     if (!sell() || rewardBalance < sellFloor()) {
@@ -123,7 +123,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
       return;
     }
 
-    // allow Uniswap to sell our reward
+    // allow Pancakeswap to sell our reward
     IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, 0);
     IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, remainingRewardBalance);
 
@@ -247,7 +247,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
   }
 
   /**
-  * Can completely disable claiming UNI rewards and selling. Good for emergency withdraw in the
+  * Can completely disable claiming rewards and selling. Good for emergency withdraw in the
   * simplest possible way.
   */
   function setSell(bool s) public onlyGovernance {
@@ -255,13 +255,13 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
   }
 
   /**
-  * Sets the minimum amount of CRV needed to trigger a sale.
+  * Sets the minimum amount needed to trigger a sale.
   */
   function setSellFloor(uint256 floor) public onlyGovernance {
     _setSellFloor(floor);
   }
 
-  // masterchef rewards pool ID
+  // rewards pool ID
   function _setPoolId(uint256 _value) internal {
     setUint256(_POOLID_SLOT, _value);
   }
