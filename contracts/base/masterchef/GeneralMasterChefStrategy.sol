@@ -136,7 +136,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
       return;
     }
 
-    // allow Uniswap to sell our reward
+    // allow Pancakeswap to sell our reward
     IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, 0);
     IBEP20(rewardToken()).safeApprove(pancakeswapRouterV2, remainingRewardBalance);
 
@@ -183,14 +183,14 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
         token1Amount = toToken1;
       }
 
-      // provide token1 and token2 to SUSHI
+      // provide token1 and token2 to Pancake
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
 
       IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, token1Amount);
 
-      // we provide liquidity to sushi
+      // we provide liquidity to pancake
       uint256 liquidity;
       (,,liquidity) = IPancakeRouter02(pancakeswapRouterV2).addLiquidity(
         uniLPComponentToken0,
@@ -303,7 +303,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   }
 
   /**
-  * Can completely disable claiming UNI rewards and selling. Good for emergency withdraw in the
+  * Can completely disable claiming rewards and selling. Good for emergency withdraw in the
   * simplest possible way.
   */
   function setSell(bool s) public onlyGovernance {
@@ -311,7 +311,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   }
 
   /**
-  * Sets the minimum amount of CRV needed to trigger a sale.
+  * Sets the minimum amount needed to trigger a sale.
   */
   function setSellFloor(uint256 floor) public onlyGovernance {
     _setSellFloor(floor);
