@@ -53,7 +53,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
       300, // profit sharing numerator
       1000, // profit sharing denominator
       true, // sell
-      1e18, // sell floor
+      1e16, // sell floor
       12 hours // implementation change delay
     );
 
@@ -120,7 +120,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     pancakeswapRoutes[_token] = _route;
   }
 
-  // We assume that all the tradings can be done on Uniswap
+  // We assume that all the tradings can be done on Pancakeswap
   function _liquidateReward() internal {
     uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
     if (!sell() || rewardBalance < sellFloor()) {
@@ -183,14 +183,14 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
         token1Amount = toToken1;
       }
 
-      // provide token1 and token2 to Pancake
+      // provide token0 and token1 to Pancake
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
 
       IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, token1Amount);
 
-      // we provide liquidity to pancake
+      // we provide liquidity to Pancake
       uint256 liquidity;
       (,,liquidity) = IPancakeRouter02(pancakeswapRouterV2).addLiquidity(
         uniLPComponentToken0,
