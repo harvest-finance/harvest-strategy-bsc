@@ -12,7 +12,7 @@ contract GooseStrategyMainnet_EGG is GeneralMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6); //CAKE
+    address underlying = address(0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6);
     GeneralMasterChefStrategy.initializeStrategy(
       _storage,
       underlying,
