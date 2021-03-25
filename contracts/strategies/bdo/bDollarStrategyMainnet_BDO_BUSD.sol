@@ -12,7 +12,7 @@ contract bDollarStrategyMainnet_BDO_BUSD is GeneralMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xc5b0d73A7c0E4eaF66baBf7eE16A2096447f7aD6); //Cake-LP
+    address underlying = address(0xc5b0d73A7c0E4eaF66baBf7eE16A2096447f7aD6);
     address bdo = address(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
     address busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
     address sbdo = address(0x0d9319565be7f53CeFE84Ad201Be3f40feAE2740);
@@ -25,7 +25,6 @@ contract bDollarStrategyMainnet_BDO_BUSD is GeneralMasterChefStrategy {
       0,  // Pool id
       true // is LP asset
     );
-    // bdo is token0, busd is token1
     pancakeswapRoutes[bdo] = [sbdo, busd, bdo];
     pancakeswapRoutes[busd] = [sbdo, busd];
   }
