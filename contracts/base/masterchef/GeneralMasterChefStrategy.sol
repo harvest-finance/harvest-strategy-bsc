@@ -232,7 +232,9 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   function withdrawAllToVault() public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
-      IMasterChef(rewardPool()).withdraw(poolId(), bal);
+      if (bal != 0) {
+        IMasterChef(rewardPool()).withdraw(poolId(), bal);        
+      }
     }
     if (underlying() != rewardToken()) {
       _liquidateReward();
