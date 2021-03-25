@@ -12,7 +12,7 @@ contract VenusWBNBFoldStrategyMainnet is VenusWBNBFoldStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c); //wBNB
+    address underlying = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
     address venus = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
     address vbnb = address(0xA07c5b74C9B40447a954e1466938b865b6BBea36);
     address comptroller = address(0xfD36E2c2a6789Db23113685031d7F16329158384);

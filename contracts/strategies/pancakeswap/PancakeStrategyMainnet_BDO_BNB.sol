@@ -12,7 +12,7 @@ contract PancakeStrategyMainnet_BDO_BNB is PancakeMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0x74690f829fec83ea424ee1F1654041b2491A7bE9); //Cake-LP
+    address underlying = address(0x74690f829fec83ea424ee1F1654041b2491A7bE9);
     address bdo = address(0x190b589cf9Fb8DDEabBFeae36a813FFb2A702454);
     address cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
@@ -25,7 +25,6 @@ contract PancakeStrategyMainnet_BDO_BNB is PancakeMasterChefStrategy {
       66,  // Pool id
       true // is LP asset
     );
-    // bdo is token0, wbnb is token1
     pancakeswapRoutes[bdo] = [cake, wbnb, bdo];
     pancakeswapRoutes[wbnb] = [cake, wbnb];
   }

@@ -12,7 +12,7 @@ contract VenusFoldStrategyMainnet_BETH is VenusFoldStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0x250632378E573c6Be1AC2f97Fcdf00515d0Aa91B); //BETH
+    address underlying = address(0x250632378E573c6Be1AC2f97Fcdf00515d0Aa91B);
     address eth = address(0x2170Ed0880ac9A755fd29B2688956BD959F933F8);
     address venus = address(0xcF6BB5389c92Bdda8a3747Ddb454cB7a64626C63);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
