@@ -16,7 +16,7 @@ import "../upgradability/BaseUpgradeableStrategy.sol";
 import "../interface/pancakeswap/IPancakePair.sol";
 import "../interface/pancakeswap/IPancakeRouter02.sol";
 
-contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
+contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
@@ -53,7 +53,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       300, // profit sharing numerator
       1000, // profit sharing denominator
       true, // sell
-      1e18, // sell floor
+      1e16, // sell floor
       12 hours // implementation change delay
     );
 
@@ -84,14 +84,6 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       (bal,) = IMasterChef(rewardPool()).userInfo(poolId(), address(this));
   }
 
-  function exitRewardPool(uint256 bal) internal {
-    if (underlying() == rewardToken()) {
-      IMasterChef(rewardPool()).leaveStaking(bal);
-    } else {
-      IMasterChef(rewardPool()).withdraw(poolId(), bal);
-    }
-  }
-
   function unsalvagableTokens(address token) public view returns (bool) {
     return (token == rewardToken() || token == underlying());
   }
@@ -101,11 +93,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     IBEP20(underlying()).safeApprove(rewardPool(), 0);
     IBEP20(underlying()).safeApprove(rewardPool(), entireBalance);
 
-    if (underlying() == rewardToken()) {
-      IMasterChef(rewardPool()).enterStaking(entireBalance);
-    } else {
-      IMasterChef(rewardPool()).deposit(poolId(), entireBalance);
-    }
+    IMasterChef(rewardPool()).deposit(poolId(), entireBalance);
   }
 
   /*
@@ -115,7 +103,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   */
   function emergencyExit() public onlyGovernance {
     uint256 bal = rewardPoolBalance();
-    exitRewardPool(bal);
+    IMasterChef(rewardPool()).withdraw(poolId(), bal);
     _setPausedInvesting(true);
   }
 
@@ -130,14 +118,6 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     require(_route[0] == rewardToken(), "Path should start with rewardToken");
     require(_route[_route.length-1] == _token, "Path should end with given Token");
     pancakeswapRoutes[_token] = _route;
-  }
-
-  function _claimReward() internal {
-    if (underlying() == rewardToken()) {
-      IMasterChef(rewardPool()).leaveStaking(0); // withdraw 0 so that we dont notify fees on basis
-    } else {
-      IMasterChef(rewardPool()).withdraw(poolId(), 0);
-    }
   }
 
   // We assume that all the tradings can be done on Pancakeswap
@@ -203,7 +183,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
         token1Amount = toToken1;
       }
 
-      // provide token1 and token2 to Pancake
+      // provide token0 and token1 to Pancake
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
 
@@ -252,7 +232,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   function withdrawAllToVault() public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
-      exitRewardPool(bal);
+      IMasterChef(rewardPool()).withdraw(poolId(), bal);
     }
     if (underlying() != rewardToken()) {
       _liquidateReward();
@@ -273,7 +253,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       // for the peace of mind (in case something gets changed in between)
       uint256 needToWithdraw = amount.sub(entireBalance);
       uint256 toWithdraw = MathUpgradeable.min(rewardPoolBalance(), needToWithdraw);
-      exitRewardPool(toWithdraw);
+      IMasterChef(rewardPool()).withdraw(poolId(), toWithdraw);
     }
 
     IBEP20(underlying()).safeTransfer(vault(), amount);
@@ -315,7 +295,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   function doHardWork() external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
-      _claimReward();
+      IMasterChef(rewardPool()).withdraw(poolId(), 0);
       _liquidateReward();
     }
 
