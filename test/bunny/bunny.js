@@ -12,11 +12,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("GooseStrategyMainnet_EGG");
+const Strategy = artifacts.require("BunnyStrategyMainnet_BUNNY");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Goose EGG", function() {
+describe("BSC Mainnet Bunny BUNNY", function() {
   let accounts;
 
   // external contracts
@@ -24,8 +24,8 @@ describe("BSC Mainnet Goose EGG", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-  let eggAddr = "0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6";
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
+
 
   // parties in the protocol
   let governance;
@@ -40,7 +40,7 @@ describe("BSC Mainnet Goose EGG", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6");
+    underlying = await IBEP20.at("0xC9849E6fdB743d08fAeE3E34dd2D1bc69EA11a51");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
@@ -65,14 +65,11 @@ describe("BSC Mainnet Goose EGG", function() {
     [controller, vault, strategy,,feeForwarder] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
-      "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
     });
 
-    await strategy.setSellFloor(0, {from:governance});
-    await feeForwarder.setConversionPath(eggAddr, eth, [eggAddr, wbnb, eth], {from:governance});
-
+    await feeForwarder.setConversionPath(wbnb, eth, [wbnb, eth], {from:governance});
     // whale send underlying to farmers
     await setupBalance();
   });
