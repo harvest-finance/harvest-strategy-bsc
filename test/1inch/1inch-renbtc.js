@@ -104,7 +104,7 @@ describe("BSC Mainnet 1INCH 1INCH/renBTC", function() {
     });
 
     await strategy.setSellFloorAndSlippages(0, 1, 10, {from:governance});
-    await feeForwarder.setConversionPath(oneInchAddr, eth, [oneInchAddr, wbnb, eth], {from:governance});
+    await feeForwarder.setConversionPath(wbnb, eth, [wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
