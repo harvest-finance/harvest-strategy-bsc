@@ -8,6 +8,8 @@ import "@pancakeswap/pancake-swap-lib/contracts/utils/Address.sol";
 import "./interface/IMooniswap.sol";
 import "./interface/IFarmingRewards.sol";
 
+import "../../base/venus-base/wbnb/WBNB.sol";
+
 import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
 import "../../base/interface/IVault.sol";
 
@@ -28,6 +30,7 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
 
   address public pool;
   address public oneInch = address(0x111111111117dC0aa78b770fA6A738034120C302);
+  address public _wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
 
   uint256 maxUint = uint256(~0);
   address public oneInchEthLP;
@@ -49,7 +52,7 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
     address _underlying,
     address _pool
   )
-  StrategyBase(_storage, _underlying, _vault, oneInch, address(0)) public {
+  StrategyBase(_storage, _underlying, _vault, _wbnb, address(0)) public {
     require(IVault(_vault).underlying() == _underlying, "vault does not support the required LP token");
     token1 = IMooniswap(_underlying).token1();
     pool = _pool;
@@ -119,7 +122,6 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
   /**
   * Claims the 1Inch crop, converts it accordingly
   */
-
   function claimAndLiquidate() internal {
     if (!sell) {
       // Profits can be disabled for possible simplified and rapid exit
@@ -133,17 +135,31 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
       return;
     }
 
-    // share 30% of the 1INCH as a profit sharing reward
-    notifyProfitInRewardToken(oneInchBalance);
-
-    uint256 remainingBalance = IBEP20(oneInch).balanceOf(address(this));
-
+    // convert 1INCH to wBNB to notify
     IBEP20(oneInch).safeApprove(underlying, 0);
-    IBEP20(oneInch).safeApprove(underlying, remainingBalance.div(2));
+    IBEP20(oneInch).safeApprove(underlying, oneInchBalance);
 
     // with the remaining, half would be converted into the second token
     uint256 amountOutMin = 1;
-    IMooniswap(underlying).swap(oneInch, address(0), remainingBalance.div(2), amountOutMin, address(0));
+    IMooniswap(underlying).swap(oneInch, address(0), oneInchBalance, amountOutMin, address(0));
+
+    uint256 bnbBalance = address(this).balance;
+    WBNB wbnb = WBNB(payable(_wbnb));
+    wbnb.deposit.value(bnbBalance)();
+
+    // share 30% of the 1INCH as a profit sharing reward
+    notifyProfitInRewardToken(bnbBalance);
+
+    uint256 remainingBalance = IBEP20(_wbnb).balanceOf(address(this));
+
+    wbnb.withdraw(remainingBalance);
+    IMooniswap(underlying).swap.value(remainingBalance.div(2))(
+      address(0),
+      oneInch,
+      remainingBalance.div(2),
+      amountOutMin,
+      address(0)
+      );
 
     uint256 oneInchAmount = IBEP20(oneInch).balanceOf(address(this));
     uint256 bnbAmount = address(this).balance;
