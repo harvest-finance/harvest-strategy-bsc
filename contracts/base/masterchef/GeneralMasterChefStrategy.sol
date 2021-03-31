@@ -50,7 +50,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
       _vault,
       _rewardPool,
       _rewardToken,
-      300, // profit sharing numerator
+      80, // profit sharing numerator
       1000, // profit sharing denominator
       true, // sell
       1e16, // sell floor
@@ -233,7 +233,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
       if (bal != 0) {
-        IMasterChef(rewardPool()).withdraw(poolId(), bal);        
+        IMasterChef(rewardPool()).withdraw(poolId(), bal);
       }
     }
     if (underlying() != rewardToken()) {
