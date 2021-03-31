@@ -39,7 +39,7 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
       _vault,
       address(0x0667Eed0a0aAb930af74a3dfeDD263A73994f216), //RewardPool
       venus,
-      300, // profit sharing numerator
+      80, // profit sharing numerator
       1000, // profit sharing denominator
       true, // sell
       1e16, // sell floor
