@@ -26,7 +26,7 @@ contract VenusFoldStrategyMainnet_BTCB is VenusFoldStrategy {
       venus,
       550, //collateralFactorNumerator
       1000, //collateralFactorDenominator
-      5 //Folds
+      0 //Folds
     );
     liquidationPath = [venus, wbnb, underlying];
   }
