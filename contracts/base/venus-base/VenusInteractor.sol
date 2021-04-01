@@ -156,7 +156,9 @@ contract VenusInteractor is ReentrancyGuardUpgradeable {
   * Get XVS
   */
   function claimVenus() public {
-    comptroller.claimVenus(address(this));
+    address[] memory markets = new address[](1);
+    markets[0] = address(vtoken);
+    comptroller.claimVenus(address(this), markets);
   }
 
   /**

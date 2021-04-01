@@ -10,7 +10,7 @@ abstract contract ComptrollerInterface {
         address cTokenModify,
         uint redeemTokens,
         uint borrowAmount) external virtual view returns (uint, uint, uint);
-    function claimVenus(address holder) external virtual;
+    function claimVenus(address holder, address[] memory vTokens) external virtual;
 
     /// @notice Indicator that this is a Comptroller contract (for inspection)
     bool public constant isComptroller = true;
