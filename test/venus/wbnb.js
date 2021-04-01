@@ -12,7 +12,7 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusWBNBFoldStrategyMainnet");
+const Strategy = artifacts.require("VenusFoldStrategyMainnet_WBNB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.

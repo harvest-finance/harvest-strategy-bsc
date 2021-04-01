@@ -27,7 +27,7 @@ contract VenusFoldStrategyMainnet_BETH is VenusFoldStrategy {
       venus,
       550, //collateralFactorNumerator
       1000, //collateralFactorDenominator
-      5 //Folds
+      0 //Folds
     );
     liquidationPath = [venus, wbnb, eth, underlying];
   }
