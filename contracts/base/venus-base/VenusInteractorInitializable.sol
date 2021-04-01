@@ -164,7 +164,9 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
   * Get XVS
   */
   function claimVenus() public {
-    ComptrollerInterface(comptroller()).claimVenus(address(this));
+    address[] memory markets = new address[](1);
+    markets[0] = address(vToken());
+    ComptrollerInterface(comptroller()).claimVenus(address(this), markets);
   }
 
   /**
