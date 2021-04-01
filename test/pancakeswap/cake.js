@@ -28,6 +28,7 @@ describe("BSC Mainnet Pancake CAKE", function() {
   // parties in the protocol
   let governance;
   let farmer1;
+  let farmer2;
 
   // numbers used in tests
   let farmerBalance;
@@ -44,7 +45,10 @@ describe("BSC Mainnet Pancake CAKE", function() {
 
   async function setupBalance(){
     await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
-    farmerBalance = await underlying.balanceOf(farmer1);
+    farmer1Balance = await underlying.balanceOf(farmer1);
+    await swapBNBToToken(farmer2, [wbnb, underlying.address], "100" + "000000000000000000");
+    farmer2Balance = await underlying.balanceOf(farmer2);
+
   }
 
   before(async function() {
@@ -52,6 +56,7 @@ describe("BSC Mainnet Pancake CAKE", function() {
     accounts = await web3.eth.getAccounts();
 
     farmer1 = accounts[1];
+    farmer2 = accounts[2];
 
     // impersonate accounts
     await impersonates([governance]);
@@ -75,7 +80,7 @@ describe("BSC Mainnet Pancake CAKE", function() {
   describe("Happy path", function() {
     it("Farmer should earn money", async function() {
       let farmerOldBalance = new BigNumber(await underlying.balanceOf(farmer1));
-      await depositVault(farmer1, underlying, vault, farmerBalance);
+      await depositVault(farmer1, underlying, vault, farmer1Balance);
 
       // Using half days is to simulate how we doHardwork in the real world
       let hours = 10;
@@ -83,6 +88,9 @@ describe("BSC Mainnet Pancake CAKE", function() {
       let oldSharePrice;
       let newSharePrice;
       for (let i = 0; i < hours; i++) {
+        if (i==1) {
+          await depositVault(farmer2, underlying, vault, farmer2Balance);
+        }
         console.log("loop ", i);
 
         oldSharePrice = new BigNumber(await vault.getPricePerFullShare());
