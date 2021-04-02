@@ -4,7 +4,7 @@ const {
   impersonates,
   setupCoreProtocol,
   depositVault,
-  wrapBNB
+  swapBNBToToken
 } = require("../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
@@ -12,15 +12,19 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("VenusFoldStrategyMainnet_WBNB");
+const Strategy = artifacts.require("VenusFoldStrategyMainnet_USDC");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Venus WBNB", function() {
+describe("BSC Mainnet Venus USDC", function() {
   let accounts;
 
   // external contracts
   let underlying;
+
+  // external setup
+  let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+  let busd = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
 
   // parties in the protocol
   let governance;
@@ -35,12 +39,12 @@ describe("BSC Mainnet Venus WBNB", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c");
+    underlying = await IBEP20.at("0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    await wrapBNB(farmer1, "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, busd, underlying.address], "100" + "000000000000000000");
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
