@@ -1,3 +1,5 @@
+//SPDX-License-Identifier: Unlicense
+
 pragma solidity 0.6.12;
 
 import "../../base/venus-base/VenusFoldStrategy.sol";
@@ -26,7 +28,7 @@ contract VenusFoldStrategyMainnet_BTCB is VenusFoldStrategy {
       venus,
       550, //collateralFactorNumerator
       1000, //collateralFactorDenominator
-      5 //Folds
+      0 //Folds
     );
     liquidationPath = [venus, wbnb, underlying];
   }

@@ -1,4 +1,3 @@
-
 // SPDX-License-Identifier: MIT
 
 pragma solidity 0.6.12;
@@ -18,6 +17,8 @@ abstract contract Proxy {
   fallback () payable external {
     _fallback();
   }
+
+  receive () payable external {}
 
   /**
    * @return The Address of the implementation.

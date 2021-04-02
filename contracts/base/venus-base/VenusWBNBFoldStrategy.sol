@@ -80,7 +80,7 @@ contract VenusWBNBFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitia
     borrowedInUnderlying = CompleteVToken(vToken()).borrowBalanceCurrent(address(this));
   }
 
-  function depositArbCheck() public view returns (bool) {
+  function depositArbCheck() public pure returns (bool) {
     // there's no arb here.
     return true;
   }
