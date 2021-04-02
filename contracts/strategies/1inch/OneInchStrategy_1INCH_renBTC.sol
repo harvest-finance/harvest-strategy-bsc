@@ -1,3 +1,5 @@
+//SPDX-License-Identifier: Unlicense
+
 pragma solidity 0.6.12;
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
@@ -70,7 +72,7 @@ contract OneInchStrategy_1INCH_renBTC is StrategyBase {
     unsalvagableTokens[token1] = true;
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
@@ -164,7 +166,7 @@ contract OneInchStrategy_1INCH_renBTC is StrategyBase {
 
     uint256 bnbBalance = address(this).balance;
     WBNB wbnb = WBNB(payable(_wbnb));
-    wbnb.deposit.value(bnbBalance)();
+    wbnb.deposit{value: bnbBalance}();
 
     // share 30% of the 1INCH as a profit sharing reward
     notifyProfitInRewardToken(bnbBalance);
@@ -173,7 +175,7 @@ contract OneInchStrategy_1INCH_renBTC is StrategyBase {
     uint256 remainingBalance = IBEP20(_wbnb).balanceOf(address(this));
 
     wbnb.withdraw(remainingBalance);
-    IMooniswap(oneInchBNBLP).swap.value(remainingBalance)(
+    IMooniswap(oneInchBNBLP).swap{value: remainingBalance}(
       address(0),
       oneInch,
       remainingBalance,
