@@ -1,3 +1,5 @@
+//SPDX-License-Identifier: Unlicense
+
 pragma solidity 0.6.12;
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
@@ -63,7 +65,7 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
     unsalvagableTokens[oneInch] = false;
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
@@ -145,7 +147,7 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
 
     uint256 bnbBalance = address(this).balance;
     WBNB wbnb = WBNB(payable(_wbnb));
-    wbnb.deposit.value(bnbBalance)();
+    wbnb.deposit{value: bnbBalance}();
 
     // share 30% of the 1INCH as a profit sharing reward
     notifyProfitInRewardToken(bnbBalance);
@@ -153,7 +155,7 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
     uint256 remainingBalance = IBEP20(_wbnb).balanceOf(address(this));
 
     wbnb.withdraw(remainingBalance);
-    IMooniswap(underlying).swap.value(remainingBalance.div(2))(
+    IMooniswap(underlying).swap{value: remainingBalance.div(2)}(
       address(0),
       oneInch,
       remainingBalance.div(2),
@@ -168,7 +170,7 @@ contract OneInchStrategy_1INCH_BNB is StrategyBase {
     IBEP20(oneInch).safeApprove(underlying, oneInchAmount);
 
     // adding liquidity: ETH + token1
-    IMooniswap(underlying).deposit.value(bnbAmount)(
+    IMooniswap(underlying).deposit{value: bnbAmount}(
       [bnbAmount, oneInchAmount],
       [bnbAmount.mul(slippageNumerator).div(slippageDenominator),
         oneInchAmount.mul(slippageNumerator).div(slippageDenominator)

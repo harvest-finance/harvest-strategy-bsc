@@ -56,7 +56,7 @@ contract VenusInteractor is ReentrancyGuardUpgradeable {
     }
     WBNB wbnb = WBNB(payable(address(_wbnb)));
     wbnb.withdraw(balance); // Unwrapping
-    IVBNB(address(vtoken)).mint.value(balance)();
+    IVBNB(address(vtoken)).mint{value: balance}();
   }
 
   /**
@@ -66,7 +66,7 @@ contract VenusInteractor is ReentrancyGuardUpgradeable {
   function _redeemBNBInvTokens(uint256 amountVTokens) internal nonReentrant {
     _redeemInVTokens(amountVTokens);
     WBNB wbnb = WBNB(payable(address(_wbnb)));
-    wbnb.deposit.value(address(this).balance)();
+    wbnb.deposit{value: address(this).balance}();
   }
 
   /**
@@ -101,7 +101,7 @@ contract VenusInteractor is ReentrancyGuardUpgradeable {
     uint256 result = vtoken.borrow(amountUnderlying);
     require(result == 0, "Borrow failed");
     WBNB wbnb = WBNB(payable(address(_wbnb)));
-    wbnb.deposit.value(address(this).balance)();
+    wbnb.deposit{value: address(this).balance}();
   }
 
   /**
@@ -120,7 +120,7 @@ contract VenusInteractor is ReentrancyGuardUpgradeable {
   function _repayInWBNB(uint256 amountUnderlying) internal {
     WBNB wbnb = WBNB(payable(address(_wbnb)));
     wbnb.withdraw(amountUnderlying); // Unwrapping
-    IVBNB(address(vtoken)).repayBorrow.value(amountUnderlying)();
+    IVBNB(address(vtoken)).repayBorrow{value: amountUnderlying}();
   }
 
   /**
@@ -148,7 +148,7 @@ contract VenusInteractor is ReentrancyGuardUpgradeable {
     if (amountUnderlying > 0) {
       _redeemUnderlying(amountUnderlying);
       WBNB wbnb = WBNB(payable(address(_wbnb)));
-      wbnb.deposit.value(address(this).balance)();
+      wbnb.deposit{value: address(this).balance}();
     }
   }
 
