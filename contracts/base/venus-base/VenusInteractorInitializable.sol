@@ -64,7 +64,7 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
     }
     WBNB wbnb = WBNB(payable(_wbnb));
     wbnb.withdraw(balance); // Unwrapping
-    IVBNB(vToken()).mint.value(balance)();
+    IVBNB(vToken()).mint{value: balance}();
   }
 
   /**
@@ -74,7 +74,7 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
   function _redeemBNBInvTokens(uint256 amountVTokens) internal nonReentrant {
     _redeemInVTokens(amountVTokens);
     WBNB wbnb = WBNB(payable(_wbnb));
-    wbnb.deposit.value(address(this).balance)();
+    wbnb.deposit{value: address(this).balance}();
   }
 
   /**
@@ -109,7 +109,7 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
     uint256 result = CompleteVToken(vToken()).borrow(amountUnderlying);
     require(result == 0, "Borrow failed");
     WBNB wbnb = WBNB(payable(_wbnb));
-    wbnb.deposit.value(address(this).balance)();
+    wbnb.deposit{value: address(this).balance}();
   }
 
   /**
@@ -128,7 +128,7 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
   function _repayInWBNB(uint256 amountUnderlying) internal {
     WBNB wbnb = WBNB(payable(_wbnb));
     wbnb.withdraw(amountUnderlying); // Unwrapping
-    IVBNB(vToken()).repayBorrow.value(amountUnderlying)();
+    IVBNB(vToken()).repayBorrow{value: amountUnderlying}();
   }
 
   /**
@@ -156,7 +156,7 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
     if (amountUnderlying > 0) {
       _redeemUnderlying(amountUnderlying);
       WBNB wbnb = WBNB(payable(_wbnb));
-      wbnb.deposit.value(address(this).balance)();
+      wbnb.deposit{value: address(this).balance}();
     }
   }
 
@@ -164,7 +164,9 @@ contract VenusInteractorInitializable is Initializable, ReentrancyGuardUpgradeab
   * Get XVS
   */
   function claimVenus() public {
-    ComptrollerInterface(comptroller()).claimVenus(address(this));
+    address[] memory markets = new address[](1);
+    markets[0] = address(vToken());
+    ComptrollerInterface(comptroller()).claimVenus(address(this), markets);
   }
 
   /**
