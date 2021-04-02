@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: Unlicense
 
 pragma solidity 0.6.12;
 
@@ -49,7 +49,7 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
     liquidationPath = [venus, wbnb, busd, vai];
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
