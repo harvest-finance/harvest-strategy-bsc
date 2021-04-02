@@ -1,8 +1,10 @@
+//SPDX-License-Identifier: Unlicense
+
 pragma solidity 0.6.12;
 
 import "../../base/venus-base/VenusWBNBFoldStrategy.sol";
 
-contract VenusWBNBFoldStrategyMainnet is VenusWBNBFoldStrategy {
+contract VenusFoldStrategyMainnet_WBNB is VenusWBNBFoldStrategy {
 
   address public wbnb_unused; // just a differentiator for the bytecode
 
@@ -25,7 +27,7 @@ contract VenusWBNBFoldStrategyMainnet is VenusWBNBFoldStrategy {
       venus,
       550, //collateralFactorNumerator
       1000, //collateralFactorDenominator
-      5 //Folds
+      0 //Folds
     );
     liquidationPath = [venus, underlying];
   }

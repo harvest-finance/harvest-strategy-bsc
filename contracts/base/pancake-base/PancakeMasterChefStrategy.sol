@@ -76,7 +76,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
@@ -141,8 +141,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   }
 
   // We assume that all the tradings can be done on Pancakeswap
-  function _liquidateReward() internal {
-    uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
+  function _liquidateReward(uint256 rewardBalance) internal {
     if (!sell() || rewardBalance < sellFloor()) {
       // Profits can be disabled for possible simplified and rapid exit
       emit ProfitsNotCollected(sell(), rewardBalance < sellFloor());
@@ -255,7 +254,8 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       exitRewardPool(bal);
     }
     if (underlying() != rewardToken()) {
-      _liquidateReward();
+      uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
+      _liquidateReward(rewardBalance);
     }
     IBEP20(underlying()).safeTransfer(vault(), IBEP20(underlying()).balanceOf(address(this)));
   }
@@ -315,8 +315,11 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   function doHardWork() external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
+      uint256 rewardBalanceBefore = IBEP20(rewardToken()).balanceOf(address(this));
       _claimReward();
-      _liquidateReward();
+      uint256 rewardBalanceAfter = IBEP20(rewardToken()).balanceOf(address(this));
+      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
+      _liquidateReward(claimedReward);
     }
 
     investAllUnderlying();
