@@ -27,13 +27,13 @@ abstract contract VTokenStorage {
     uint8 public decimals;
 
     /**
-     * @notice Maximum borrow rate that can ever be applied (.0005% / block)
+     * @dev Maximum borrow rate that can ever be applied (.0005% / block)
      */
 
     uint internal constant borrowRateMaxMantissa = 0.0005e16;
 
     /**
-     * @notice Maximum fraction of interest that can be set aside for reserves
+     * @dev Maximum fraction of interest that can be set aside for reserves
      */
     uint internal constant reserveFactorMaxMantissa = 1e18;
 
@@ -58,7 +58,7 @@ abstract contract VTokenStorage {
     InterestRateModel public interestRateModel;
 
     /**
-     * @notice Initial exchange rate used when minting the first VTokens (used when totalSupply = 0)
+     * @dev Initial exchange rate used when minting the first VTokens (used when totalSupply = 0)
      */
     uint internal initialExchangeRateMantissa;
 
@@ -93,12 +93,12 @@ abstract contract VTokenStorage {
     uint public totalSupply;
 
     /**
-     * @notice Official record of token balances for each account
+     * @dev Official record of token balances for each account
      */
     mapping (address => uint) internal accountTokens;
 
     /**
-     * @notice Approved token transfer amounts on behalf of others
+     * @dev Approved token transfer amounts on behalf of others
      */
     mapping (address => mapping (address => uint)) internal transferAllowances;
 
@@ -113,7 +113,7 @@ abstract contract VTokenStorage {
     }
 
     /**
-     * @notice Mapping of account addresses to outstanding borrow balances
+     * @dev Mapping of account addresses to outstanding borrow balances
      */
     mapping(address => BorrowSnapshot) internal accountBorrows;
 }

@@ -76,7 +76,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
