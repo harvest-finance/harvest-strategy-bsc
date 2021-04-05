@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: Unlicense
 
-pragma solidity >=0.6.0;
+pragma solidity 0.6.12;
 
 import "./interface/IMasterBelt.sol";
 import "./interface/IDepositor.sol";
@@ -62,7 +62,7 @@ contract BeltVenusStrategy is BaseUpgradeableStrategy {
     _setDepositor(_depositHelp);
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
