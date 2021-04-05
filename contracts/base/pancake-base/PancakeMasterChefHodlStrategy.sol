@@ -63,7 +63,7 @@ contract PancakeMasterChefHodlStrategy is BaseUpgradeableStrategy {
     setAddress(_POTPOOL_SLOT, _potPool);
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
