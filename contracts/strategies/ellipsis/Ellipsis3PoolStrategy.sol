@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: Unlicense
 
-pragma solidity >=0.6.0;
+pragma solidity 0.6.12;
 
 import "./interface/ILpTokenStaker.sol";
 import "./interface/ILiquidityPool.sol";
@@ -65,7 +65,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
     _setLiquidityPool(_liquidityPool);
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 

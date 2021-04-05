@@ -1,6 +1,6 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: Unlicense
 
-pragma solidity >=0.6.0;
+pragma solidity 0.6.12;
 
 import "./interface/ILpTokenStaker.sol";
 import "./interface/IMultiFeeDistribution.sol";
@@ -72,7 +72,7 @@ contract EllipsisLPStrategy is BaseUpgradeableStrategy {
     pancakeswapRoutes[uniLPComponentToken1] = new address[](0);
   }
 
-  function depositArbCheck() public view returns(bool) {
+  function depositArbCheck() public pure returns(bool) {
     return true;
   }
 
