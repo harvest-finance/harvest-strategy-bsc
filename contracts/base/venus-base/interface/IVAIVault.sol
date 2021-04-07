@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0;
+pragma solidity 0.6.12;
 
 // https://bscscan.com/address/0x7680c89eb3e58dec4d38093b4803be2b7f257360#code
 interface IVAIVault {

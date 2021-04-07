@@ -81,7 +81,7 @@ contract VenusFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializa
     borrowedInUnderlying = CompleteVToken(vToken()).borrowBalanceCurrent(address(this));
   }
 
-  function depositArbCheck() public view returns (bool) {
+  function depositArbCheck() public pure returns (bool) {
     // there's no arb here.
     return true;
   }
