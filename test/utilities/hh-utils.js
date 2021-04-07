@@ -150,8 +150,8 @@ async function setupCoreProtocol(config) {
     const strategyProxy = await StrategyProxy.new(strategyImpl.address);
     strategy = await config.strategyArtifact.at(strategyProxy.address);
     await strategy.initializeStrategy(
-      ...config.strategyArgs,
-      { from: config.governance }
+      ...config.strategyArgs
+      // { from: config.governance }
     );
   }
 
