@@ -98,13 +98,17 @@ contract VenusFoldStrategy is BaseUpgradeableStrategy, VenusInteractorInitializa
     // Check before supplying
     uint256 supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
     uint256 borrowed = CompleteVToken(vToken()).borrowBalanceCurrent(address(this));
-    _supply(balance);
+    if (balance > 0) {
+      _supply(balance);
+    }
     if (supplied.mul(collateralFactorNumerator()) > borrowed.mul(collateralFactorDenominator()) || supplied == 0) {
       for (uint256 i = 0; i < folds(); i++) {
         uint256 borrowAmount = balance.mul(collateralFactorNumerator()).div(collateralFactorDenominator());
         _borrow(borrowAmount);
         balance = IBEP20(underlying()).balanceOf(address(this));
-        _supply(balance);
+        if (balance > 0) {
+          _supply(balance);
+        }
       }
     }
   }
