@@ -24,6 +24,8 @@ describe("BSC Mainnet Goose EGG", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
+  let eggAddr = "0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6";
+  let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
   // parties in the protocol
   let governance;
@@ -66,7 +68,10 @@ describe("BSC Mainnet Goose EGG", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
+      "liquidationPath": [eggAddr, wbnb, eth],
     });
+
+    await strategy.setSellFloor(0, {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
