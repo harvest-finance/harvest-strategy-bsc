@@ -8,11 +8,6 @@ const WBNB = artifacts.require("WBNB")
 
 const Utils = require("./Utils.js");
 
-const Storage = artifacts.require("Storage");
-const Controller = artifacts.require("Controller");
-const FeeRewardForwarder = artifacts.require("FeeRewardForwarder");
-const Vault = artifacts.require("Vault");
-
 async function impersonates(targetAccounts){
   console.log("Impersonating...");
   for(i = 0; i < targetAccounts.length ; i++){
@@ -27,26 +22,22 @@ async function impersonates(targetAccounts){
 }
 
 async function setupCoreProtocol(config) {
-  const storageNew = await Storage.new({from: config.governance});
-  const feeRewardForwarderNew = await FeeRewardForwarder.new(storageNew.address, {from: config.governance});
-  const controllerNew = await Controller.new(storageNew.address, feeRewardForwarderNew.address, {from: config.governance});
-  await storageNew.setController(controllerNew.address,{from: config.governance});
-  const vaultNew = await Vault.new({from: config.governance});
-
   // Set vault (or Deploy new vault), underlying, underlying Whale,
   // amount the underlying whale should send to farmers
   if(config.existingVaultAddress != null){
     vault = await Vault.at(config.existingVaultAddress);
     console.log("Fetching Vault at: ", vault.address);
   } else {
-    const implAddress = config.vaultImplementationOverride || vaultNew.address;
-    vault = await makeVault(implAddress, storageNew.address, config.underlying.address, 100, 100, {
+    const implAddress = config.vaultImplementationOverride || addresses.VaultImplementationV1;
+    vault = await makeVault(implAddress, addresses.Storage, config.underlying.address, 100, 100, {
       from: config.governance,
     });
     console.log("New Vault Deployed: ", vault.address);
   }
 
-  controller = await IController.at(controllerNew.address);
+  controller = await IController.at(addresses.Controller);
+  feeRewardForwarder = await IFeeRewardForwarder.at(await controller.feeRewardForwarder());
+
 
   if (config.feeRewardForwarder) {/*
     const FeeRewardForwarder = artifacts.require("FeeRewardForwarder");
@@ -92,7 +83,7 @@ async function setupCoreProtocol(config) {
         vault.address,
         64800,
         rewardDistributions,
-        storageNew.address,
+        addresses.Storage,
         "fPool",
         "fPool",
         18,
@@ -107,7 +98,7 @@ async function setupCoreProtocol(config) {
         vault.address,
         64800,
         rewardDistributions,
-        storageNew.address,
+        addresses.Storage,
         "0x0000000000000000000000000000000000000000",
         "0x0000000000000000000000000000000000000000",
         {from: config.governance }
@@ -122,13 +113,13 @@ async function setupCoreProtocol(config) {
 
   // default arguments are storage and vault addresses
   config.strategyArgs = config.strategyArgs || [
-    storageNew.address,
+    addresses.Storage,
     vault.address
   ];
 
   for(i = 0; i < config.strategyArgs.length ; i++){
     if(config.strategyArgs[i] == "storageAddr") {
-      config.strategyArgs[i] = storageNew.address;
+      config.strategyArgs[i] = addresses.Storage;
     } else if(config.strategyArgs[i] == "vaultAddr") {
       config.strategyArgs[i] = vault.address;
     } else if(config.strategyArgs[i] == "poolAddr" ){
@@ -157,16 +148,15 @@ async function setupCoreProtocol(config) {
 
   console.log("Strategy Deployed: ", strategy.address);
 
-  // if (config.feeRewardForwarderLiquidationPath) {
-  //   // legacy path support
-  //   const path = config.feeRewardForwarderLiquidationPath;
-  //   await universalLiquidatorRegistry.setPath(
-  //     web3.utils.keccak256("uni"),
-  //     path[0],
-  //     path[path.length - 1],
-  //     path
-  //   );
-  // }
+  if (config.liquidationPath) {
+    const path = config.liquidationPath;
+    await feeRewardForwarder.setConversionPath(
+      path[0],
+      path[path.length - 1],
+      path,
+      {from: config.governance}
+    );
+  }
 
   if (config.announceStrategy === true) {
     // Announce switch, time pass, switch to strategy
@@ -185,7 +175,7 @@ async function setupCoreProtocol(config) {
     console.log("Strategy and vault added to Controller.");
   }
 
-  return [controller, vault, strategy, rewardPool, feeRewardForwarderNew];
+  return [controller, vault, strategy, rewardPool];
 }
 
 async function depositVault(_farmer, _underlying, _vault, _amount) {

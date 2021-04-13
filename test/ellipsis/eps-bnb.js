@@ -11,14 +11,13 @@ const {
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
-const IMooniswap = artifacts.require("IMooniswap");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("OneInchStrategyMainnet_1INCH_BNB");
+const Strategy = artifacts.require("EllipsisLPStrategyMainnet_EPS_BNB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet 1INCH 1INCH/BNB", function() {
+describe("BSC Mainnet Ellipsis EPS/BNB", function() {
   let accounts;
 
   // external contracts
@@ -26,9 +25,8 @@ describe("BSC Mainnet 1INCH 1INCH/BNB", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-  let oneInchAddr = "0x111111111117dC0aa78b770fA6A738034120C302";
+  let token1Addr = "0xA7f552078dcC247C2684336020c03648500C6d9F";
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
-  let zeroAddr = "0x0000000000000000000000000000000000000000";
 
   // parties in the protocol
   let governance;
@@ -43,24 +41,15 @@ describe("BSC Mainnet 1INCH 1INCH/BNB", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xdaF66c0B7e8E2FC76B15B07AD25eE58E04a66796");
+    underlying = await IBEP20.at("0xf9045866e7b372DeF1EFf3712CE55FAc1A98dAF0");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    oneInch = await IBEP20.at(oneInchAddr);
-    pair = await IMooniswap.at(underlying.address);
-    await pair.swap(zeroAddr, oneInchAddr, "100" + "000000000000000000", 0, zeroAddr, {from: farmer1, value: "100" + "000000000000000000"})
-    farmerOneInchBalance = await oneInch.balanceOf(farmer1);
-    await oneInch.approve(pair.address, farmerOneInchBalance, {from: farmer1});
-    await pair.deposit(
-      ["100" + "000000000000000000", farmerOneInchBalance],
-      [0,0],
-      {
-        from: farmer1,
-        value: "100" + "000000000000000000"
-      }
-    );
+    token1 = await IBEP20.at(token1Addr);
+    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000");
+    farmerToken1Balance = await token1.balanceOf(farmer1);
+    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -77,15 +66,16 @@ describe("BSC Mainnet 1INCH 1INCH/BNB", function() {
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
 
     await setupExternalContracts();
-    [controller, vault, strategy] = await setupCoreProtocol({
+    [controller, vault, strategy,,feeForwarder] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
+      "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [wbnb, eth],
     });
 
-    await strategy.setSellFloorAndSlippages(0, 1, 10, {from:governance});
+    await strategy.setSellFloor(0, {from:governance});
+    await feeForwarder.setConversionPath(token1Addr, eth, [token1Addr, wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
