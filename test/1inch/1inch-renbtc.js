@@ -96,15 +96,15 @@ describe("BSC Mainnet 1INCH 1INCH/renBTC", function() {
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
 
     await setupExternalContracts();
-    [controller, vault, strategy,,feeForwarder] = await setupCoreProtocol({
+    [controller, vault, strategy] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "underlying": underlying,
       "governance": governance,
+      "liquidationPath": [wbnb, eth],
     });
 
     await strategy.setSellFloorAndSlippages(0, 1, 10, {from:governance});
-    await feeForwarder.setConversionPath(wbnb, eth, [wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
