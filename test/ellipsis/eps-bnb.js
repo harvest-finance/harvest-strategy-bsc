@@ -66,16 +66,16 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
 
     await setupExternalContracts();
-    [controller, vault, strategy,,feeForwarder] = await setupCoreProtocol({
+    [controller, vault, strategy] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
+      "liquidationPath": [eps, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
-    await feeForwarder.setConversionPath(token1Addr, eth, [token1Addr, wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
