@@ -3,7 +3,7 @@
 pragma solidity 0.6.12;
 
 import "../interface/ILpTokenStaker.sol";
-import "./ILiquidity3Pool.sol";
+import "./I3PoolDeposit.sol";
 import "../interface/IMultiFeeDistribution.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
@@ -158,7 +158,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
 
       // we can accept 0 as minimum, this will be called only by trusted roles
       uint256 minimum = 0;
-      ILiquidity3Pool(liquidityPool()).add_liquidity([busdBalance, 0, 0], minimum);
+      I3PoolDeposit(liquidityPool()).add_liquidity([busdBalance, 0, 0], minimum);
     }
   }
 
