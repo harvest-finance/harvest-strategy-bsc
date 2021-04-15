@@ -1,33 +1,26 @@
 // Utilities
-const Utils = require("../utilities/Utils.js");
+const Utils = require("../../utilities/Utils.js");
 const {
   impersonates,
   setupCoreProtocol,
   depositVault,
-  swapBNBToToken,
-  addLiquidity
-} = require("../utilities/hh-utils.js");
+  wrapBNB
+} = require("../../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("EllipsisLPStrategyMainnet_EPS_BNB");
+const Strategy = artifacts.require("VenusFoldStrategyV2Mainnet_WBNB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Ellipsis EPS/BNB", function() {
+describe("BSC Mainnet Venus WBNB", function() {
   let accounts;
 
   // external contracts
   let underlying;
-
-  // external setup
-  let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-  let token1Addr = "0xA7f552078dcC247C2684336020c03648500C6d9F";
-  let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
-  let eps = "0xA7f552078dcC247C2684336020c03648500C6d9F";
 
   // parties in the protocol
   let governance;
@@ -42,15 +35,12 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xf9045866e7b372DeF1EFf3712CE55FAc1A98dAF0");
+    underlying = await IBEP20.at("0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    token1 = await IBEP20.at(token1Addr);
-    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000");
-    farmerToken1Balance = await token1.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance);
+    await wrapBNB(farmer1, "100" + "000000000000000000");
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -73,7 +63,6 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eps, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
@@ -94,7 +83,6 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
       let newSharePrice;
       for (let i = 0; i < hours; i++) {
         console.log("loop ", i);
-
         oldSharePrice = new BigNumber(await vault.getPricePerFullShare());
         await controller.doHardWork(vault.address, { from: governance });
         newSharePrice = new BigNumber(await vault.getPricePerFullShare());
@@ -102,6 +90,15 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
         console.log("old shareprice: ", oldSharePrice.toFixed());
         console.log("new shareprice: ", newSharePrice.toFixed());
         console.log("growth: ", newSharePrice.toFixed() / oldSharePrice.toFixed());
+
+        // if (i>0) {
+        //   console.log("Farmer withdraws", i, "% of the vault");
+        //   farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*i).toFixed();
+        //   console.log("Withdrawing", farmerfBalance, "fTokens");
+        //   await vault.withdraw(farmerfBalance, {from: farmer1});
+        //   farmerBalance = new BigNumber(await underlying.balanceOf(farmer1)).toFixed();
+        //   console.log("New farmer balance:", farmerBalance, "WBNB");
+        // }
 
         await Utils.advanceNBlock(blocksPerHour);
       }
@@ -115,8 +112,6 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
       console.log("earned!");
       console.log("APR:", apr*100, "%");
       console.log("APY:", (apy-1)*100, "%");
-
-      await strategy.withdrawAllToVault({from:governance}); // making sure can withdraw all for a next switch
 
     });
   });
