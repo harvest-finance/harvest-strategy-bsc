@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: Unlicense
 
-pragma solidity >=0.6.0;
+pragma solidity 0.6.12;
 
-import "./interface/IMasterChef.sol";
-import "../interface/IStrategy.sol";
+import "./interface/IMasterBelt.sol";
+import "./interface/IDepositor.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
@@ -11,27 +11,25 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 
-import "../interface/IVault.sol";
-import "../upgradability/BaseUpgradeableStrategy.sol";
-import "../interface/pancakeswap/IPancakePair.sol";
-import "../interface/pancakeswap/IPancakeRouter02.sol";
+import "../../base/upgradability/BaseUpgradeableStrategy.sol";
+import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
 
-contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
+contract BeltVenusStrategy is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
   address constant public pancakeswapRouterV2 = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
+  address constant public busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
 
   // additional storage slots (on top of BaseUpgradeableStrategy ones) are defined here
   bytes32 internal constant _POOLID_SLOT = 0x3fd729bfa2e28b7806b03a6e014729f59477b530f995be4d51defc9dad94810b;
-  bytes32 internal constant _IS_LP_ASSET_SLOT = 0xc2f3dabf55b1bdda20d5cf5fcba9ba765dfc7c9dbaf28674ce46d43d60d58768;
+  bytes32 internal constant _DEPOSITOR_SLOT = 0x7e51443ed339b944018a93b758544b6d25c6c65ccaf25ffca5127da0103d7ddf;
 
-  // this would be reset on each upgrade
-  mapping (address => address[]) public pancakeswapRoutes;
+  address[] public pancake_BELT2BUSD;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
-    assert(_IS_LP_ASSET_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.isLpAsset")) - 1));
+    assert(_DEPOSITOR_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.depositor")) - 1));
   }
 
   function initializeStrategy(
@@ -40,8 +38,8 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     address _vault,
     address _rewardPool,
     address _rewardToken,
-    uint256 _poolID,
-    bool _isLpToken
+    address _depositHelp,
+    uint256 _poolID
   ) public initializer {
 
     BaseUpgradeableStrategy.initialize(
@@ -58,22 +56,10 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     );
 
     address _lpt;
-    (_lpt,,,) = IMasterChef(rewardPool()).poolInfo(_poolID);
+    (_lpt,,,,) = IMasterBelt(rewardPool()).poolInfo(_poolID);
     require(_lpt == underlying(), "Pool Info does not match underlying");
     _setPoolId(_poolID);
-
-    if (_isLpToken) {
-      address uniLPComponentToken0 = IPancakePair(underlying()).token0();
-      address uniLPComponentToken1 = IPancakePair(underlying()).token1();
-
-      // these would be required to be initialized separately by governance
-      pancakeswapRoutes[uniLPComponentToken0] = new address[](0);
-      pancakeswapRoutes[uniLPComponentToken1] = new address[](0);
-    } else {
-      pancakeswapRoutes[underlying()] = new address[](0);
-    }
-
-    setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
+    _setDepositor(_depositHelp);
   }
 
   function depositArbCheck() public pure returns(bool) {
@@ -81,7 +67,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   }
 
   function rewardPoolBalance() internal view returns (uint256 bal) {
-      (bal,) = IMasterChef(rewardPool()).userInfo(poolId(), address(this));
+      (bal,) = IMasterBelt(rewardPool()).userInfo(poolId(), address(this));
   }
 
   function unsalvagableTokens(address token) public view returns (bool) {
@@ -93,7 +79,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     IBEP20(underlying()).safeApprove(rewardPool(), 0);
     IBEP20(underlying()).safeApprove(rewardPool(), entireBalance);
 
-    IMasterChef(rewardPool()).deposit(poolId(), entireBalance);
+    IMasterBelt(rewardPool()).deposit(poolId(), entireBalance);
   }
 
   /*
@@ -102,8 +88,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   *   The function is only used for emergency to exit the pool
   */
   function emergencyExit() public onlyGovernance {
-    uint256 bal = rewardPoolBalance();
-    IMasterChef(rewardPool()).withdraw(poolId(), bal);
+    IMasterBelt(rewardPool()).emergencyWithdraw(poolId());
     _setPausedInvesting(true);
   }
 
@@ -114,14 +99,14 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     _setPausedInvesting(false);
   }
 
-  function setLiquidationPath(address _token, address [] memory _route) public onlyGovernance {
+  function setLiquidationPath(address [] memory _route) public onlyGovernance {
     require(_route[0] == rewardToken(), "Path should start with rewardToken");
-    require(_route[_route.length-1] == _token, "Path should end with given Token");
-    pancakeswapRoutes[_token] = _route;
+    pancake_BELT2BUSD = _route;
   }
 
   // We assume that all the tradings can be done on Pancakeswap
-  function _liquidateReward(uint256 rewardBalance) internal {
+  function _liquidateReward() internal {
+    uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
     if (!sell() || rewardBalance < sellFloor()) {
       // Profits can be disabled for possible simplified and rapid exit
       emit ProfitsNotCollected(sell(), rewardBalance < sellFloor());
@@ -142,77 +127,35 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     // we can accept 1 as minimum because this is called only by a trusted role
     uint256 amountOutMin = 1;
 
-    if (isLpAsset()) {
-      address uniLPComponentToken0 = IPancakePair(underlying()).token0();
-      address uniLPComponentToken1 = IPancakePair(underlying()).token1();
+    IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+      remainingRewardBalance,
+      amountOutMin,
+      pancake_BELT2BUSD,
+      address(this),
+      block.timestamp
+    );
+  }
 
-      uint256 toToken0 = remainingRewardBalance.div(2);
-      uint256 toToken1 = remainingRewardBalance.sub(toToken0);
-
-      uint256 token0Amount;
-
-      if (pancakeswapRoutes[uniLPComponentToken0].length > 1) {
-        // if we need to liquidate the token0
-        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-          toToken0,
-          amountOutMin,
-          pancakeswapRoutes[uniLPComponentToken0],
-          address(this),
-          block.timestamp
-        );
-        token0Amount = IBEP20(uniLPComponentToken0).balanceOf(address(this));
-      } else {
-        // otherwise we assme token0 is the reward token itself
-        token0Amount = toToken0;
-      }
-
-      uint256 token1Amount;
-
-      if (pancakeswapRoutes[uniLPComponentToken1].length > 1) {
-        // sell reward token to token1
-        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-          toToken1,
-          amountOutMin,
-          pancakeswapRoutes[uniLPComponentToken1],
-          address(this),
-          block.timestamp
-        );
-        token1Amount = IBEP20(uniLPComponentToken1).balanceOf(address(this));
-      } else {
-        token1Amount = toToken1;
-      }
-
-      // provide token0 and token1 to Pancake
-      IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
-      IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
-
-      IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, 0);
-      IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, token1Amount);
-
-      // we provide liquidity to Pancake
-      uint256 liquidity;
-      (,,liquidity) = IPancakeRouter02(pancakeswapRouterV2).addLiquidity(
-        uniLPComponentToken0,
-        uniLPComponentToken1,
-        token0Amount,
-        token1Amount,
-        1,  // we are willing to take whatever the pair gives us
-        1,  // we are willing to take whatever the pair gives us
-        address(this),
-        block.timestamp
-      );
-    } else {
-      if (underlying() != rewardToken()) {
-        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-          remainingRewardBalance,
-          amountOutMin,
-          pancakeswapRoutes[underlying()],
-          address(this),
-          block.timestamp
-        );
-      }
+  function claimAndLiquidateReward() internal {
+    IMasterBelt(rewardPool()).withdraw(poolId(), 0);
+    _liquidateReward();
+    if (IBEP20(busd).balanceOf(address(this)) > 0) {
+      beltFromBusd();
     }
   }
+
+  function beltFromBusd() internal {
+    uint256 busdBalance = IBEP20(busd).balanceOf(address(this));
+    if (busdBalance > 0) {
+      IBEP20(busd).safeApprove(depositor(), 0);
+      IBEP20(busd).safeApprove(depositor(), busdBalance);
+
+      // we can accept 0 as minimum, this will be called only by trusted roles
+      uint256 minimum = 0;
+      IDepositor(depositor()).add_liquidity([0, 0, 0, busdBalance], minimum);
+    }
+  }
+
 
   /*
   *   Stakes everything the strategy holds into the reward pool
@@ -232,12 +175,9 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
       if (bal != 0) {
-        IMasterChef(rewardPool()).withdraw(poolId(), bal);
+        claimAndLiquidateReward();
+        IMasterBelt(rewardPool()).withdraw(poolId(), bal);
       }
-    }
-    if (underlying() != rewardToken()) {
-      uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
-      _liquidateReward(rewardBalance);
     }
     IBEP20(underlying()).safeTransfer(vault(), IBEP20(underlying()).balanceOf(address(this)));
   }
@@ -255,7 +195,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
       // for the peace of mind (in case something gets changed in between)
       uint256 needToWithdraw = amount.sub(entireBalance);
       uint256 toWithdraw = MathUpgradeable.min(rewardPoolBalance(), needToWithdraw);
-      IMasterChef(rewardPool()).withdraw(poolId(), toWithdraw);
+      IMasterBelt(rewardPool()).withdraw(poolId(), toWithdraw);
     }
 
     IBEP20(underlying()).safeTransfer(vault(), amount);
@@ -297,13 +237,8 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
   function doHardWork() external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
-      uint256 rewardBalanceBefore = IBEP20(rewardToken()).balanceOf(address(this));
-      IMasterChef(rewardPool()).withdraw(poolId(), 0);
-      uint256 rewardBalanceAfter = IBEP20(rewardToken()).balanceOf(address(this));
-      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
-      _liquidateReward(claimedReward);
+      claimAndLiquidateReward();
     }
-
     investAllUnderlying();
   }
 
@@ -322,7 +257,7 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     _setSellFloor(floor);
   }
 
-  // masterchef rewards pool ID
+  // rewards pool ID
   function _setPoolId(uint256 _value) internal {
     setUint256(_POOLID_SLOT, _value);
   }
@@ -331,19 +266,15 @@ contract GeneralMasterChefStrategy is BaseUpgradeableStrategy {
     return getUint256(_POOLID_SLOT);
   }
 
-  function isLpAsset() public view returns (bool) {
-    return getBoolean(_IS_LP_ASSET_SLOT);
+  function _setDepositor(address _address) internal {
+    setAddress(_DEPOSITOR_SLOT, _address);
+  }
+
+  function depositor() public virtual view returns (address) {
+    return getAddress(_DEPOSITOR_SLOT);
   }
 
   function finalizeUpgrade() external onlyGovernance {
     _finalizeUpgrade();
-    // reset the liquidation paths
-    // they need to be re-set manually
-    if (isLpAsset()) {
-      pancakeswapRoutes[IPancakePair(underlying()).token0()] = new address[](0);
-      pancakeswapRoutes[IPancakePair(underlying()).token1()] = new address[](0);
-    } else {
-      pancakeswapRoutes[underlying()] = new address[](0);
-    }
   }
 }
