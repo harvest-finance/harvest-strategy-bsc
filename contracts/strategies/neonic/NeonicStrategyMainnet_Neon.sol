@@ -2,9 +2,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../base/masterchef/GeneralMasterChefStrategy.sol";
+import "../../base/masterchef/GeneralMasterChefStrategyDepositFee.sol";
 
-contract NeonicStrategyMainnet_NEON is GeneralMasterChefStrategy {
+contract NeonicStrategyMainnet_NEON is GeneralMasterChefStrategyDepositFee {
 
   address public neon_unused; // just a differentiator for the bytecode
 
@@ -15,7 +15,7 @@ contract NeonicStrategyMainnet_NEON is GeneralMasterChefStrategy {
     address _vault
   ) public initializer {
     address underlying = address(0x94026f0227cE0c9611e8a228f114F9F19CC3Fa87);
-    GeneralMasterChefStrategy.initializeStrategy(
+    GeneralMasterChefStrategyDepositFee.initializeStrategy(
       _storage,
       underlying,
       _vault,
