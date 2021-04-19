@@ -13,11 +13,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("NeonicStrategyMainnet_NEON_CAKE");
+const Strategy = artifacts.require("NeonicStrategyMainnet_NEON_ETH");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Neonic NEON/CAKE", function() {
+describe("BSC Mainnet Neonic NEON/ETH", function() {
   let accounts;
 
   // external contracts
@@ -26,7 +26,7 @@ describe("BSC Mainnet Neonic NEON/CAKE", function() {
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
   let neonAddr = "0x94026f0227cE0c9611e8a228f114F9F19CC3Fa87";
-  let cakeAddr = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
+  let ethAddr = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
   // parties in the protocol
@@ -42,18 +42,18 @@ describe("BSC Mainnet Neonic NEON/CAKE", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xEAbBe7646B1D3ba1f3D32c8439ec828fD653cB64");
+    underlying = await IBEP20.at("0xFa7D22ec8F803F4A3eF0efc6e053d3017d77CC66");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
     neon = await IBEP20.at(neonAddr);
-    cake = await IBEP20.at(cakeAddr);
+    eth = await IBEP20.at(ethAddr);
     await swapBNBToToken(farmer1, [wbnb, neon.address], "100" + "000000000000000000");
-    await swapBNBToToken(farmer1, [wbnb, cake.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, eth.address], "100" + "000000000000000000");
     farmerNeonBalance = await neon.balanceOf(farmer1);
-    farmerCakeBalance = await cake.balanceOf(farmer1);
-    await addLiquidity(farmer1, cake, neon, farmerCakeBalance, farmerNeonBalance);
+    farmerEthBalance = await eth.balanceOf(farmer1);
+    await addLiquidity(farmer1, eth, neon, farmerEthBalance, farmerNeonBalance);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

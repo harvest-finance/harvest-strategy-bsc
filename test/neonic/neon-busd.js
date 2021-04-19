@@ -13,11 +13,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("GooseStrategyMainnet_EGG_BUSD");
+const Strategy = artifacts.require("NeonicStrategyMainnet_NEON_BUSD");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Goose EGG/BUSD", function() {
+describe("BSC Mainnet Neonic NEON/BUSD", function() {
   let accounts;
 
   // external contracts
@@ -25,7 +25,7 @@ describe("BSC Mainnet Goose EGG/BUSD", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-  let eggAddr = "0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6";
+  let neonAddr = "0x94026f0227cE0c9611e8a228f114F9F19CC3Fa87";
   let busdAddr = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
@@ -42,18 +42,18 @@ describe("BSC Mainnet Goose EGG/BUSD", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0x19e7cbECDD23A16DfA5573dF54d98F7CaAE03019");
+    underlying = await IBEP20.at("0xaB953EFFA07e7FB7E694b25169ef515Aa8Ae9Daf");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    egg = await IBEP20.at(eggAddr);
+    neon = await IBEP20.at(neonAddr);
     busd = await IBEP20.at(busdAddr);
-    await swapBNBToToken(farmer1, [wbnb, egg.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, neon.address], "100" + "000000000000000000");
     await swapBNBToToken(farmer1, [wbnb, busd.address], "100" + "000000000000000000");
-    farmerEggBalance = await egg.balanceOf(farmer1);
+    farmerNeonBalance = await neon.balanceOf(farmer1);
     farmerBusdBalance = await busd.balanceOf(farmer1);
-    await addLiquidity(farmer1, busd, egg, farmerBusdBalance, farmerEggBalance);
+    await addLiquidity(farmer1, busd, neon, farmerBusdBalance, farmerNeonBalance);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -76,7 +76,7 @@ describe("BSC Mainnet Goose EGG/BUSD", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eggAddr, wbnb, eth],
+      "liquidationPath": [neonAddr, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});

@@ -13,11 +13,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("GooseStrategyMainnet_EGG_BNB");
+const Strategy = artifacts.require("NeonicStrategyMainnet_NEON_BNB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Goose EGG/BNB", function() {
+describe("BSC Mainnet Neonic NEON/BNB", function() {
   let accounts;
 
   // external contracts
@@ -25,7 +25,7 @@ describe("BSC Mainnet Goose EGG/BNB", function() {
 
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-  let eggAddr = "0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6";
+  let neonAddr = "0x94026f0227cE0c9611e8a228f114F9F19CC3Fa87";
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
   // parties in the protocol
@@ -41,15 +41,15 @@ describe("BSC Mainnet Goose EGG/BNB", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xd1B59D11316E87C3a0A069E80F590BA35cD8D8D3");
+    underlying = await IBEP20.at("0x1C0641d2677703DEcfA8E49E6C90E7E462007CA4");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    egg = await IBEP20.at(eggAddr);
-    await swapBNBToToken(farmer1, [wbnb, egg.address], "100" + "000000000000000000");
-    farmerEggBalance = await egg.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", egg, "100" + "000000000000000000", farmerEggBalance);
+    neon = await IBEP20.at(neonAddr);
+    await swapBNBToToken(farmer1, [wbnb, neon.address], "100" + "000000000000000000");
+    farmerNeonBalance = await neon.balanceOf(farmer1);
+    await addLiquidity(farmer1, "BNB", neon, "100" + "000000000000000000", farmerNeonBalance);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -72,7 +72,7 @@ describe("BSC Mainnet Goose EGG/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eggAddr, wbnb, eth],
+      "liquidationPath": [neonAddr, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});

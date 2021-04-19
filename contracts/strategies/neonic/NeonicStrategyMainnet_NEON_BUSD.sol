@@ -2,11 +2,11 @@
 
 pragma solidity 0.6.12;
 
-import "../../base/masterchef/GeneralMasterChefStrategy.sol";
+import "../../base/masterchef/GeneralMasterChefStrategyDepositFee.sol";
 
-contract GooseStrategyMainnet_EGG_BUSD is GeneralMasterChefStrategy {
+contract NeonicStrategyMainnet_NEON_BUSD is GeneralMasterChefStrategyDepositFee {
 
-  address public egg_busd_unused; // just a differentiator for the bytecode
+  address public neon_busd_unused; // just a differentiator for the bytecode
 
   constructor() public {}
 
@@ -14,18 +14,18 @@ contract GooseStrategyMainnet_EGG_BUSD is GeneralMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0x19e7cbECDD23A16DfA5573dF54d98F7CaAE03019);
-    address egg = address(0xF952Fc3ca7325Cc27D15885d37117676d25BfdA6);
+    address underlying = address(0xaB953EFFA07e7FB7E694b25169ef515Aa8Ae9Daf);
+    address neon = address(0x94026f0227cE0c9611e8a228f114F9F19CC3Fa87);
     address busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
-    GeneralMasterChefStrategy.initializeStrategy(
+    GeneralMasterChefStrategyDepositFee.initializeStrategy(
       _storage,
       underlying,
       _vault,
-      address(0xe70E9185F5ea7Ba3C5d63705784D8563017f2E57), // master chef contract
-      egg,
-      0,  // Pool id
+      address(0x045502eE488806BDF22928B6228BDD162B5056f6), // master chef contract
+      neon,
+      1,  // Pool id
       true // is LP asset
     );
-    pancakeswapRoutes[busd] = [egg, busd];
+    pancakeswapRoutes[busd] = [neon, busd];
   }
 }

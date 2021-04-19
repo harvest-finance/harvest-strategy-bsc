@@ -13,11 +13,11 @@ const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("NeonicStrategyMainnet_NEON_CAKE");
+const Strategy = artifacts.require("NeonicStrategyMainnet_NEON_BTCB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Neonic NEON/CAKE", function() {
+describe("BSC Mainnet Neonic NEON/BTCB", function() {
   let accounts;
 
   // external contracts
@@ -26,7 +26,8 @@ describe("BSC Mainnet Neonic NEON/CAKE", function() {
   // external setup
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
   let neonAddr = "0x94026f0227cE0c9611e8a228f114F9F19CC3Fa87";
-  let cakeAddr = "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82";
+  let btcbAddr = "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c";
+  let busd = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
   // parties in the protocol
@@ -42,18 +43,18 @@ describe("BSC Mainnet Neonic NEON/CAKE", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xEAbBe7646B1D3ba1f3D32c8439ec828fD653cB64");
+    underlying = await IBEP20.at("0x17baE1a9FaCaA596a10C3BB90F6Dbb970847BB05");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
     neon = await IBEP20.at(neonAddr);
-    cake = await IBEP20.at(cakeAddr);
+    btcb = await IBEP20.at(btcbAddr);
     await swapBNBToToken(farmer1, [wbnb, neon.address], "100" + "000000000000000000");
-    await swapBNBToToken(farmer1, [wbnb, cake.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, btcb.address], "100" + "000000000000000000");
     farmerNeonBalance = await neon.balanceOf(farmer1);
-    farmerCakeBalance = await cake.balanceOf(farmer1);
-    await addLiquidity(farmer1, cake, neon, farmerCakeBalance, farmerNeonBalance);
+    farmerBtcbBalance = await btcb.balanceOf(farmer1);
+    await addLiquidity(farmer1, btcb, neon, farmerBtcbBalance, farmerNeonBalance);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -76,7 +77,7 @@ describe("BSC Mainnet Neonic NEON/CAKE", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [neonAddr, wbnb, eth],
+      "liquidationPath": [neonAddr, busd, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
