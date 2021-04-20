@@ -66,7 +66,7 @@ describe("BSC Mainnet Swirl SWIRL/BNB", function() {
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
 
     await setupExternalContracts();
-    [controller, vault, strategy,,feeForwarder] = await setupCoreProtocol({
+    [controller, vault, strategy] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "strategyArtifactIsUpgradable": true,
@@ -75,7 +75,6 @@ describe("BSC Mainnet Swirl SWIRL/BNB", function() {
     });
 
     await strategy.setSellFloor(0, {from:governance});
-    await feeForwarder.setConversionPath(wbnb, eth, [wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
