@@ -2,9 +2,9 @@
 
 pragma solidity 0.6.12;
 
-import "./interface/ILpTokenStaker.sol";
-import "./interface/ILiquidityPool.sol";
-import "./interface/IMultiFeeDistribution.sol";
+import "../interface/ILpTokenStaker.sol";
+import "./IBTCPoolDeposit.sol";
+import "../interface/IMultiFeeDistribution.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
@@ -12,23 +12,23 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 
-import "../../base/upgradability/BaseUpgradeableStrategy.sol";
-import "../../base/interface/pancakeswap/IPancakePair.sol";
-import "../../base/interface/pancakeswap/IPancakeRouter02.sol";
+import "../../../base/upgradability/BaseUpgradeableStrategy.sol";
+import "../../../base/interface/pancakeswap/IPancakePair.sol";
+import "../../../base/interface/pancakeswap/IPancakeRouter02.sol";
 
-contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
+contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
   address constant public pancakeswapRouterV2 = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
-  address constant public busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
+  address constant public btcb = address(0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c);
   address constant public feeDistribution = address(0x4076CC26EFeE47825917D0feC3A79d0bB9a6bB5c);
 
   // additional storage slots (on top of BaseUpgradeableStrategy ones) are defined here
   bytes32 internal constant _POOLID_SLOT = 0x3fd729bfa2e28b7806b03a6e014729f59477b530f995be4d51defc9dad94810b;
   bytes32 internal constant _LP_SLOT = 0x52fa11fe6490ae4f804cf68cc716afb013e57c91fe13ef62a3660c3d209b32e2;
 
-  address[] public pancake_EPS2BUSD;
+  address[] public pancake_EPS2BTCB;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
@@ -104,7 +104,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
 
   function setLiquidationPath(address [] memory _route) public onlyGovernance {
     require(_route[0] == rewardToken(), "Path should start with rewardToken");
-    pancake_EPS2BUSD = _route;
+    pancake_EPS2BTCB = _route;
   }
 
   // We assume that all the tradings can be done on Pancakeswap
@@ -133,7 +133,7 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
     IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
       remainingRewardBalance,
       amountOutMin,
-      pancake_EPS2BUSD,
+      pancake_EPS2BTCB,
       address(this),
       block.timestamp
     );
@@ -145,20 +145,20 @@ contract Ellipsis3PoolStrategy is BaseUpgradeableStrategy {
     ILpTokenStaker(rewardPool()).claim(pids);
     IMultiFeeDistribution(feeDistribution).exit();
     _liquidateReward();
-    if (IBEP20(busd).balanceOf(address(this)) > 0) {
-      epsFromBusd();
+    if (IBEP20(btcb).balanceOf(address(this)) > 0) {
+      btcEpsFromBtcb();
     }
   }
 
-  function epsFromBusd() internal {
-    uint256 busdBalance = IBEP20(busd).balanceOf(address(this));
-    if (busdBalance > 0) {
-      IBEP20(busd).safeApprove(liquidityPool(), 0);
-      IBEP20(busd).safeApprove(liquidityPool(), busdBalance);
+  function btcEpsFromBtcb() internal {
+    uint256 btcbBalance = IBEP20(btcb).balanceOf(address(this));
+    if (btcbBalance > 0) {
+      IBEP20(btcb).safeApprove(liquidityPool(), 0);
+      IBEP20(btcb).safeApprove(liquidityPool(), btcbBalance);
 
       // we can accept 0 as minimum, this will be called only by trusted roles
       uint256 minimum = 0;
-      ILiquidityPool(liquidityPool()).add_liquidity([busdBalance, 0, 0], minimum);
+      IBTCPoolDeposit(liquidityPool()).add_liquidity([btcbBalance, 0], minimum);
     }
   }
 
