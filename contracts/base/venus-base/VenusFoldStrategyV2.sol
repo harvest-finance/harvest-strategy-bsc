@@ -12,8 +12,6 @@ import "../upgradability/BaseUpgradeableStrategy.sol";
 
 import "../interface/pancakeswap/IPancakeRouter02.sol";
 
-import "hardhat/console.sol";
-
 contract VenusFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInitializableV2 {
 
   using SafeMath for uint256;
@@ -157,8 +155,9 @@ contract VenusFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInitiali
     }
     // get some of the underlying
     mustRedeemPartial(amountUnderlying);
+    balance = IBEP20(underlying()).balanceOf(address(this));
     // transfer the amount requested (or the amount we have) back to vault()
-    IBEP20(underlying()).safeTransfer(vault(), amountUnderlying);
+    IBEP20(underlying()).safeTransfer(vault(), MathUpgradeable.min(amountUnderlying, balance));
     balance = IBEP20(underlying()).balanceOf(address(this));
     if (balance > 0) {
       // invest back to Venus
@@ -206,7 +205,7 @@ contract VenusFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInitiali
       collateralFactorNumerator(),
       factorDenominator()
       );
-    require(IBEP20(underlying()).balanceOf(address(this)) >= amountUnderlying, "Unable to withdraw the entire amountUnderlying");
+    require(IBEP20(underlying()).balanceOf(address(this)) >= amountUnderlying.mul(999).div(1000), "Unable to withdraw the entire amountUnderlying");
   }
 
   /**

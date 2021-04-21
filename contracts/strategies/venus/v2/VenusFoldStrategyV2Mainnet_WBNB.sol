@@ -25,10 +25,10 @@ contract VenusFoldStrategyV2Mainnet_WBNB is VenusWBNBFoldStrategyV2 {
       _vault,
       comptroller,
       venus,
-      580, //borrowTarget
+      0, //borrowTarget
       599, //collateralFactor
       1000, //Denominator
-      true  //fold?
+      false  //fold?
     );
     liquidationPath = [venus, underlying];
   }

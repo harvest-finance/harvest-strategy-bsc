@@ -13,8 +13,6 @@ import "./interface/CompleteVToken.sol";
 import "./wbnb/WBNB.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 
-import "hardhat/console.sol";
-
 contract VenusInteractorInitializableV2 is Initializable, ReentrancyGuardUpgradeable {
 
   using SafeMath for uint256;
@@ -196,7 +194,8 @@ contract VenusInteractorInitializableV2 is Initializable, ReentrancyGuardUpgrade
 
     redeemPartialWithLoan(MathUpgradeable.min(available, balance), 0, collateralFactorNumerator, collateralFactorDenominator);
     supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
-    if (supplied > 0) {
+    uint256 vBalance = IBEP20(vToken()).balanceOf(address(this));
+    if (supplied > 0 && vBalance>1) {
       available = CompleteVToken(vToken()).getCash();
       _redeemUnderlying(MathUpgradeable.min(available, supplied));
     }
@@ -234,6 +233,7 @@ contract VenusInteractorInitializableV2 is Initializable, ReentrancyGuardUpgrade
       uint256 toRedeem = amount.sub(underlyingBalance);
       // redeem the most we can redeem
       _redeemUnderlying(toRedeem);
+      underlyingBalance = IBEP20(_underlying()).balanceOf(address(this));
     }
   }
 
@@ -248,7 +248,8 @@ contract VenusInteractorInitializableV2 is Initializable, ReentrancyGuardUpgrade
 
     redeemPartialWBNBWithLoan(MathUpgradeable.min(available, balance), 0, collateralFactorNumerator, collateralFactorDenominator);
     supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
-    if (supplied > 0) {
+    uint256 vBalance = IBEP20(vToken()).balanceOf(address(this));
+    if (supplied > 0 && vBalance>1) {
       available = CompleteVToken(vToken()).getCash();
       redeemUnderlyingInWBNB(MathUpgradeable.min(available, supplied));
     }
