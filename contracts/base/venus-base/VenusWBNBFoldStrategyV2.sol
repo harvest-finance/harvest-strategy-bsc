@@ -207,7 +207,7 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
       collateralFactorNumerator(),
       factorDenominator()
       );
-    require(IBEP20(underlying()).balanceOf(address(this)) >= amountUnderlying.mul(999).div(1000), "Unable to withdraw the entire amountUnderlying");
+    require(IBEP20(underlying()).balanceOf(address(this)) >= amountUnderlying.mul(9999).div(10000), "Unable to withdraw the entire amountUnderlying");
   }
 
   /**
