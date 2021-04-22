@@ -10,14 +10,14 @@ const {
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
-const ILiquidityPool = artifacts.require("I3PoolDeposit");
+const ILiquidityPool = artifacts.require("IFUSDTPoolDeposit");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("Ellipsis3PoolStrategyMainnet");
+const Strategy = artifacts.require("EllipsisFUSDTStrategyMainnet");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Ellipsis 3Pool", function() {
+describe("BSC Mainnet Ellipsis FUSDT", function() {
   let accounts;
 
   // external contracts
@@ -28,7 +28,7 @@ describe("BSC Mainnet Ellipsis 3Pool", function() {
   let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
   let busdAddr = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
-  let eps3PoolAddr = "0x160CAed03795365F3A589f10C379FfA7d75d4E76";
+  let depositorAddr = "0xf17814d515d3128753befd56cCeCEC2a0A41015F";
 
   // parties in the protocol
   let governance;
@@ -43,17 +43,17 @@ describe("BSC Mainnet Ellipsis 3Pool", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xaF4dE8E872131AE328Ce21D909C74705d3Aaf452");
+    underlying = await IBEP20.at("0x373410A99B64B089DFE16F1088526D399252dacE");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
     busd = await IBEP20.at(busdAddr);
-    liquidityPool = await ILiquidityPool.at(eps3PoolAddr);
+    liquidityPool = await ILiquidityPool.at(depositorAddr);
     await swapBNBToToken(farmer1, [wbnb, busdAddr], "100" + "000000000000000000");
     farmerBusdBalance = await busd.balanceOf(farmer1);
-    await busd.approve(eps3PoolAddr, farmerBusdBalance, {from: farmer1});
-    await liquidityPool.add_liquidity([farmerBusdBalance, 0, 0], 0, {from: farmer1});
+    await busd.approve(depositorAddr, farmerBusdBalance, {from: farmer1});
+    await liquidityPool.add_liquidity([0, farmerBusdBalance, 0, 0], 0, {from: farmer1});
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
