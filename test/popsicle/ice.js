@@ -10,25 +10,22 @@ const {
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
-const ILiquidityPool = artifacts.require("I3PoolDeposit");
 
 //const Strategy = artifacts.require("");
-const Strategy = artifacts.require("Ellipsis3PoolStrategyMainnet");
+const Strategy = artifacts.require("PopsicleStrategtMainnet_ICE");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Ellipsis 3Pool", function() {
+describe("BSC Mainnet Popsicle ICE", function() {
   let accounts;
 
   // external contracts
   let underlying;
 
   // external setup
-  let eps = "0xA7f552078dcC247C2684336020c03648500C6d9F";
-  let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
   let wbnb = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
-  let busdAddr = "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56";
-  let eps3PoolAddr = "0x160CAed03795365F3A589f10C379FfA7d75d4E76";
+  let iceAddr = "0xf16e81dce15B08F326220742020379B855B87DF9";
+  let eth = "0x2170Ed0880ac9A755fd29B2688956BD959F933F8";
 
   // parties in the protocol
   let governance;
@@ -43,17 +40,12 @@ describe("BSC Mainnet Ellipsis 3Pool", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xaF4dE8E872131AE328Ce21D909C74705d3Aaf452");
+    underlying = await IBEP20.at("0xf16e81dce15B08F326220742020379B855B87DF9");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
-    busd = await IBEP20.at(busdAddr);
-    liquidityPool = await ILiquidityPool.at(eps3PoolAddr);
-    await swapBNBToToken(farmer1, [wbnb, busdAddr], "100" + "000000000000000000");
-    farmerBusdBalance = await busd.balanceOf(farmer1);
-    await busd.approve(eps3PoolAddr, farmerBusdBalance, {from: farmer1});
-    await liquidityPool.add_liquidity([farmerBusdBalance, 0, 0], 0, {from: farmer1});
+    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -76,7 +68,7 @@ describe("BSC Mainnet Ellipsis 3Pool", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eps, wbnb, eth],
+      "liquidationPath": [iceAddr, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
