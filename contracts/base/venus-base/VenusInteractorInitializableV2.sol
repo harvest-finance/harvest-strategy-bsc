@@ -207,23 +207,7 @@ contract VenusInteractorInitializableV2 is Initializable, ReentrancyGuardUpgrade
     // amount we supplied
     uint256 supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
 
-    redeemPartialNoFold(MathUpgradeable.min(supplied, available));
-
-    supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
-    uint256 vBalance = IBEP20(vToken()).balanceOf(address(this));
-    if (supplied > 0 && vBalance>1) {
-      available = CompleteVToken(vToken()).getCash();
-      _redeemUnderlying(MathUpgradeable.min(available, supplied));
-    }
-  }
-
-  function redeemPartialNoFold(uint amount) internal {
-    uint256 underlyingBalance = IBEP20(_underlying()).balanceOf(address(this));
-    if (underlyingBalance < amount) {
-      uint256 toRedeem = amount.sub(underlyingBalance);
-      // redeem the most we can redeem
-      _redeemUnderlying(toRedeem);
-    }
+    _redeemUnderlying(MathUpgradeable.min(supplied, available));
   }
 
   function redeemMaximumWBNBWithLoan(uint256 collateralFactorNumerator, uint256 collateralFactorDenominator, uint256 borrowMinThreshold) internal {
@@ -264,23 +248,7 @@ contract VenusInteractorInitializableV2 is Initializable, ReentrancyGuardUpgrade
     // amount we supplied
     uint256 supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
 
-    redeemPartialNoFold(MathUpgradeable.min(supplied, available));
-
-    supplied = CompleteVToken(vToken()).balanceOfUnderlying(address(this));
-    uint256 vBalance = IBEP20(vToken()).balanceOf(address(this));
-    if (supplied > 0 && vBalance>1) {
-      available = CompleteVToken(vToken()).getCash();
-      redeemUnderlyingInWBNB(MathUpgradeable.min(available, supplied));
-    }
-  }
-
-  function redeemPartialWBNBNoFold(uint amount) internal {
-    uint256 underlyingBalance = IBEP20(_underlying()).balanceOf(address(this));
-    if (underlyingBalance < amount) {
-      uint256 toRedeem = amount.sub(underlyingBalance);
-      // redeem the most we can redeem
-      redeemUnderlyingInWBNB(toRedeem);
-    }
+    redeemUnderlyingInWBNB(MathUpgradeable.min(supplied, available));
   }
 
   function getLiquidity() external view returns(uint256) {
