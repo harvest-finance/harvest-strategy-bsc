@@ -28,10 +28,10 @@ describe("BSC Mainnet Venus BETH", function() {
 
   // parties in the protocol
   let governance;
-  let farmer1;
+  let farmer1, farmer2;
 
   // numbers used in tests
-  let farmerBalance;
+  let farmerBalance, farmer2Balance;
 
   // Core protocol contracts
   let controller;
@@ -44,8 +44,10 @@ describe("BSC Mainnet Venus BETH", function() {
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, eth, underlying.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, eth, underlying.address], "50" + "000000000000000000");
+    await swapBNBToToken(farmer2, [wbnb, eth, underlying.address], "50" + "000000000000000000");
     farmerBalance = await underlying.balanceOf(farmer1);
+    farmer2Balance = await underlying.balanceOf(farmer2);
   }
 
   before(async function() {
@@ -53,6 +55,7 @@ describe("BSC Mainnet Venus BETH", function() {
     accounts = await web3.eth.getAccounts();
 
     farmer1 = accounts[1];
+    farmer2 = accounts[2];
 
     // impersonate accounts
     await impersonates([governance]);
@@ -80,6 +83,9 @@ describe("BSC Mainnet Venus BETH", function() {
       let farmerOldBalance = new BigNumber(await underlying.balanceOf(farmer1));
       await depositVault(farmer1, underlying, vault, farmerBalance);
 
+      let farmer2OldBalance = new BigNumber(await underlying.balanceOf(farmer2));
+      await depositVault(farmer2, underlying, vault, farmer2Balance);
+
       // Using half days is to simulate how we doHardwork in the real world
       let hours = 10;
       let blocksPerHour = 2400;
@@ -97,17 +103,33 @@ describe("BSC Mainnet Venus BETH", function() {
 
         if (i>0) {
           console.log("Farmer withdraws", i, "% of the vault");
-          farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*i).toFixed();
-          console.log("Withdrawing", farmerfBalance, "fTokens");
+          farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*i);
+          let correspondingFarmerBalance = farmerfBalance.multipliedBy(newSharePrice).dividedBy("1000000000000000000");
+          console.log("Withdrawing              ", farmerfBalance.toFixed(), "fTokens");
+          console.log("Intended withdraw amount:", correspondingFarmerBalance.toFixed(), "BETH");
+          const oldFarmerBalance = new BigNumber(await underlying.balanceOf(farmer1));
+          let farmer2BalanceBefore = new BigNumber(await vault.underlyingBalanceWithInvestmentForHolder(farmer2));
           await vault.withdraw(farmerfBalance, {from: farmer1});
-          farmerBalance = new BigNumber(await underlying.balanceOf(farmer1)).toFixed();
-          console.log("New farmer balance:", farmerBalance, "BETH");
+          const sharePriceAfterWithdrawal = new BigNumber(await vault.getPricePerFullShare());
+
+          console.log("shareprice after withdrawal:", sharePriceAfterWithdrawal.toFixed());
+
+          farmerBalance = new BigNumber(await underlying.balanceOf(farmer1));
+          let farmer2BalanceAfter = new BigNumber(await vault.underlyingBalanceWithInvestmentForHolder(farmer2));
+          console.log("Actual withdraw amount:  ", farmerBalance.minus(oldFarmerBalance).toFixed(), "BETH");
+          console.log("Actual fee      amount:  ", correspondingFarmerBalance.minus(farmerBalance.minus(oldFarmerBalance)).multipliedBy(100000000).dividedBy(correspondingFarmerBalance).toFixed() / 1000000, "%");
+          console.log("New farmer balance:      ", farmerBalance.toFixed(), "BETH");
+          console.log("Farmer2 balance before:      ", farmer2BalanceBefore.toFixed(), "BETH");
+          console.log("Farmer2 balance after:       ", farmer2BalanceAfter.toFixed(), "BETH");
+          console.log("------------------------");
         }
 
         await Utils.advanceNBlock(blocksPerHour);
       }
       await vault.withdraw(new BigNumber(await vault.balanceOf(farmer1)).toFixed(), { from: farmer1 });
       let farmerNewBalance = new BigNumber(await underlying.balanceOf(farmer1));
+      console.log("old farmer balance:      ", farmerOldBalance.toFixed());
+      console.log("new farmer balance:      ", farmerNewBalance.toFixed());
       apr = (farmerNewBalance.toFixed()/farmerOldBalance.toFixed()-1)*(24/(blocksPerHour*hours/1200))*365;
       apy = ((farmerNewBalance.toFixed()/farmerOldBalance.toFixed()-1)*(24/(blocksPerHour*hours/1200))+1)**365;
 

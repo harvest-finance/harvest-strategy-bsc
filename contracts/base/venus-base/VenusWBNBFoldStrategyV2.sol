@@ -29,6 +29,7 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
   bytes32 internal constant _COLLATERALFACTORNUMERATOR_SLOT = 0x129eccdfbcf3761d8e2f66393221fa8277b7623ad13ed7693a0025435931c64a;
   bytes32 internal constant _COLLATERALFACTORDENOMINATOR_SLOT = 0x606ec222bff56fc4394b829203993803e413c3116299fce7ba56d1e18ce68869;
   bytes32 internal constant _FOLDS_SLOT = 0xa62de150ef612c15565245b7898c849ef17c729d612c5cc6670d42dca253681b;
+  bytes32 internal constant _ALLOWED_FEE_NUMERATOR_SLOT = 0x4b6c6fa4369b03464dd976a7e6a631fb74f9eb091c5e8306254025c2e07dc416;
 
   uint256 public suppliedInUnderlying;
   uint256 public borrowedInUnderlying;
@@ -39,6 +40,7 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
   );
 
   constructor() public BaseUpgradeableStrategy() {
+    assert(_ALLOWED_FEE_NUMERATOR_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.allowedFeeNumerator")) - 1));
   }
 
   function initializeStrategy(
@@ -72,6 +74,7 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
     _setCollateralFactorDenominator(_collateralFactorDenominator);
     _setCollateralFactorNumerator(_collateralFactorNumerator);
     _setFolds(_folds);
+    _setAllowedFeeNumerator(9999);
   }
 
   modifier updateSupplyInTheEnd() {
@@ -197,7 +200,7 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
   * DOES NOT ensure that the strategy cUnderlying balance becomes 0.
   */
   function redeemMaximum() internal {
-    if (folds()>0) {
+    if (folds() > 0) {
       redeemMaximumWBNBWithLoan(
         collateralFactorNumerator(),
         collateralFactorDenominator(),
@@ -211,17 +214,22 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
   /**
   * Redeems `amountUnderlying` or fails.
   */
-  function mustRedeemPartial(uint256 amountUnderlying) internal {
+
+  function mustRedeemPartial(uint256 amountUnderlyingToRedeem) internal {
+    uint256 initialBalance = IBEP20(underlying()).balanceOf(address(this));
     require(
-      CompleteVToken(vToken()).getCash() >= amountUnderlying,
+      CompleteVToken(vToken()).getCash() >= amountUnderlyingToRedeem,
       "market cash cannot cover liquidity"
     );
-    if (folds()>0) {
+    if (folds() > 0) {
       redeemMaximum();
     } else {
-      redeemPartialWBNBNoFold(amountUnderlying);
+      redeemUnderlyingInWBNB(amountUnderlyingToRedeem);
     }
-    require(IBEP20(underlying()).balanceOf(address(this)) >= amountUnderlying.mul(9999).div(10000), "Unable to withdraw the entire amountUnderlying");
+    uint256 finalBalance = IBEP20(underlying()).balanceOf(address(this));
+    require(
+      finalBalance.sub(initialBalance) >= amountUnderlyingToRedeem.mul(allowedFeeNumerator()).div(10000),
+      "Unable to withdraw the entire amountUnderlyingToRedeem");
   }
 
   /**
@@ -307,8 +315,16 @@ contract VenusWBNBFoldStrategyV2 is BaseUpgradeableStrategy, VenusInteractorInit
     return getUint256(_FOLDS_SLOT);
   }
 
+  function allowedFeeNumerator() public view returns (uint256) {
+    return getUint256(_ALLOWED_FEE_NUMERATOR_SLOT);
+  }
+
   function setSellFloor(uint256 floor) public onlyGovernance {
     _setSellFloor(floor);
+  }
+
+  function _setAllowedFeeNumerator(uint256 numerator) public onlyGovernance {
+    setUint256(_ALLOWED_FEE_NUMERATOR_SLOT, numerator);
   }
 
   function setSell(bool s) public onlyGovernance {

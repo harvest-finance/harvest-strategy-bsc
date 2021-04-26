@@ -16,7 +16,7 @@ const Strategy = artifacts.require("VenusFoldStrategyV2Mainnet_BUSD");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet Venus BETH", function() {
+describe("BSC Mainnet Venus BUSD", function() {
   let accounts;
 
   // external contracts
@@ -96,11 +96,17 @@ describe("BSC Mainnet Venus BETH", function() {
 
         if (i>0) {
           console.log("Farmer withdraws", i, "% of the vault");
-          farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*i).toFixed();
-          console.log("Withdrawing", farmerfBalance, "fTokens");
+          farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*i);
+          let correspondingFarmerBalance = farmerfBalance.multipliedBy(newSharePrice).dividedBy("1000000000000000000");
+          console.log("Withdrawing              ", farmerfBalance.toFixed(), "fTokens");
+          console.log("Intended withdraw amount:", correspondingFarmerBalance.toFixed(), "BUSD");
+          const oldFarmerBalance = new BigNumber(await underlying.balanceOf(farmer1));
           await vault.withdraw(farmerfBalance, {from: farmer1});
-          farmerBalance = new BigNumber(await underlying.balanceOf(farmer1)).toFixed();
-          console.log("New farmer balance:", farmerBalance, "BETH");
+          farmerBalance = new BigNumber(await underlying.balanceOf(farmer1));
+          console.log("Actual withdraw amount:  ", farmerBalance.minus(oldFarmerBalance).toFixed(), "BUSD");
+          console.log("Actual fee      amount:  ", correspondingFarmerBalance.minus(farmerBalance.minus(oldFarmerBalance)).multipliedBy(100000000).dividedBy(correspondingFarmerBalance).toFixed() / 1000000, "%");
+          console.log("New farmer balance:      ", farmerBalance.toFixed(), "BUSD");
+          console.log("------------------------");
         }
 
         await Utils.advanceNBlock(blocksPerHour);
