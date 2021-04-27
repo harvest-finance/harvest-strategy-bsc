@@ -50,11 +50,11 @@ describe("BSC Mainnet bDollar BDO/BUSD", function() {
   async function setupBalance(){
     bdo = await IBEP20.at(bdoAddr);
     busd = await IBEP20.at(busdAddr);
-    await swapBNBToToken(farmer1, [wbnb, busd.address, bdo.address], "50" + "000000000000000000");
-    await swapBNBToToken(farmer1, [wbnb, busd.address], "50" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, busd.address, bdo.address], "50" + "000000000000000000", false);
+    await swapBNBToToken(farmer1, [wbnb, busd.address], "50" + "000000000000000000", false);
     farmerBDOBalance = await bdo.balanceOf(farmer1);
     farmerBUSDBalance = await busd.balanceOf(farmer1);
-    await addLiquidity(farmer1, bdo, busd, farmerBDOBalance, farmerBUSDBalance);
+    await addLiquidity(farmer1, bdo, busd, farmerBDOBalance, farmerBUSDBalance, false);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
