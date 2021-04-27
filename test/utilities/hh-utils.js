@@ -189,7 +189,6 @@ async function swapBNBToToken(_farmer, _path, _amountBNB, _newRouter) {
   } else {
     router = await IPancakeRouter02.at("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F");
   }
-  router = await IPancakeRouter02.at("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F");
   await router.swapExactETHForTokens(
     0,
     _path,
