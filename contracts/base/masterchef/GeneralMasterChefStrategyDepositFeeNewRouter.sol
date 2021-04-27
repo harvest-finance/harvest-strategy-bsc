@@ -2,7 +2,7 @@
 
 pragma solidity >=0.6.0;
 
-import "./interface/IMasterChef.sol";
+import "./interface/IMasterChefDepositFee.sol";
 import "../interface/IStrategy.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
@@ -16,7 +16,7 @@ import "../upgradability/BaseUpgradeableStrategy.sol";
 import "../interface/pancakeswap/IPancakePair.sol";
 import "../interface/pancakeswap/IPancakeRouter02.sol";
 
-contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
+contract GeneralMasterChefStrategyDepositFeeNewRouter is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
@@ -53,12 +53,12 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       80, // profit sharing numerator
       1000, // profit sharing denominator
       true, // sell
-      1e18, // sell floor
+      1e16, // sell floor
       12 hours // implementation change delay
     );
 
     address _lpt;
-    (_lpt,,,) = IMasterChef(rewardPool()).poolInfo(_poolID);
+    (_lpt,,,,) = IMasterChefDepositFee(rewardPool()).poolInfo(_poolID);
     require(_lpt == underlying(), "Pool Info does not match underlying");
     _setPoolId(_poolID);
 
@@ -81,15 +81,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   }
 
   function rewardPoolBalance() internal view returns (uint256 bal) {
-      (bal,) = IMasterChef(rewardPool()).userInfo(poolId(), address(this));
-  }
-
-  function exitRewardPool(uint256 bal) internal {
-    if (underlying() == rewardToken()) {
-      IMasterChef(rewardPool()).leaveStaking(bal);
-    } else {
-      IMasterChef(rewardPool()).withdraw(poolId(), bal);
-    }
+      (bal,) = IMasterChefDepositFee(rewardPool()).userInfo(poolId(), address(this));
   }
 
   function unsalvagableTokens(address token) public view returns (bool) {
@@ -97,15 +89,14 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   }
 
   function enterRewardPool() internal {
+    uint16 depositFee;
+    (,,,,depositFee) = IMasterChefDepositFee(rewardPool()).poolInfo(poolId());
+    require(depositFee == 0, "Deposit fee is non-zero");
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
     IBEP20(underlying()).safeApprove(rewardPool(), 0);
     IBEP20(underlying()).safeApprove(rewardPool(), entireBalance);
 
-    if (underlying() == rewardToken()) {
-      IMasterChef(rewardPool()).enterStaking(entireBalance);
-    } else {
-      IMasterChef(rewardPool()).deposit(poolId(), entireBalance);
-    }
+    IMasterChefDepositFee(rewardPool()).deposit(poolId(), entireBalance);
   }
 
   /*
@@ -115,7 +106,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   */
   function emergencyExit() public onlyGovernance {
     uint256 bal = rewardPoolBalance();
-    exitRewardPool(bal);
+    IMasterChefDepositFee(rewardPool()).withdraw(poolId(), bal);
     _setPausedInvesting(true);
   }
 
@@ -130,14 +121,6 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     require(_route[0] == rewardToken(), "Path should start with rewardToken");
     require(_route[_route.length-1] == _token, "Path should end with given Token");
     pancakeswapRoutes[_token] = _route;
-  }
-
-  function _claimReward() internal {
-    if (underlying() == rewardToken()) {
-      IMasterChef(rewardPool()).leaveStaking(0); // withdraw 0 so that we dont notify fees on basis
-    } else {
-      IMasterChef(rewardPool()).withdraw(poolId(), 0);
-    }
   }
 
   // We assume that all the tradings can be done on Pancakeswap
@@ -202,7 +185,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
         token1Amount = toToken1;
       }
 
-      // provide token1 and token2 to Pancake
+      // provide token0 and token1 to Pancake
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
       IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
 
@@ -251,7 +234,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   function withdrawAllToVault() public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
-      exitRewardPool(bal);
+      IMasterChefDepositFee(rewardPool()).withdraw(poolId(), bal);
     }
     if (underlying() != rewardToken()) {
       uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
@@ -273,7 +256,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
       // for the peace of mind (in case something gets changed in between)
       uint256 needToWithdraw = amount.sub(entireBalance);
       uint256 toWithdraw = MathUpgradeable.min(rewardPoolBalance(), needToWithdraw);
-      exitRewardPool(toWithdraw);
+      IMasterChefDepositFee(rewardPool()).withdraw(poolId(), toWithdraw);
     }
 
     IBEP20(underlying()).safeTransfer(vault(), amount);
@@ -316,7 +299,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
       uint256 rewardBalanceBefore = IBEP20(rewardToken()).balanceOf(address(this));
-      _claimReward();
+      IMasterChefDepositFee(rewardPool()).withdraw(poolId(), 0);
       uint256 rewardBalanceAfter = IBEP20(rewardToken()).balanceOf(address(this));
       uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
       _liquidateReward(claimedReward);
