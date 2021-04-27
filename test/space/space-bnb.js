@@ -46,9 +46,9 @@ describe("BSC Mainnet Space SPACE/BNB", function() {
 
   async function setupBalance(){
     space = await IBEP20.at(spaceAddr);
-    await swapBNBToToken(farmer1, [wbnb, space.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, space.address], "100" + "000000000000000000", false);
     farmerSpaceBalance = await space.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", space, "100" + "000000000000000000", farmerSpaceBalance);
+    await addLiquidity(farmer1, "BNB", space, "100" + "000000000000000000", farmerSpaceBalance, false);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
