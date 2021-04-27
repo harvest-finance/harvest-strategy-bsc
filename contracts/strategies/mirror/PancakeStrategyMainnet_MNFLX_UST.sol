@@ -14,7 +14,7 @@ contract PancakeStrategyMainnet_MNFLX_UST is PancakeMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xF609ade3846981825776068a8eD7746470029D1f);
+    address underlying = address(0x91417426C3FEaA3Ca795921eB9FdD9715ad92537);
     address mnflx = address(0xa04F060077D90Fe2647B61e4dA4aD1F97d6649dc);
     address ust = address(0x23396cF899Ca06c4472205fC903bDB4de249D6fC);
     address cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
@@ -26,7 +26,7 @@ contract PancakeStrategyMainnet_MNFLX_UST is PancakeMasterChefStrategy {
       _vault,
       address(0x73feaa1eE314F8c655E354234017bE2193C9E24E), // master chef contract
       cake,
-      60,  // Pool id
+      290,  // Pool id
       true // is LP asset
     );
     pancakeswapRoutes[mnflx] = [cake, wbnb, busd, ust, mnflx];

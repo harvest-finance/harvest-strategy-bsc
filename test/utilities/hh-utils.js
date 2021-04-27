@@ -183,8 +183,12 @@ async function depositVault(_farmer, _underlying, _vault, _amount) {
   await _vault.deposit(_amount, { from: _farmer });
 }
 
-async function swapBNBToToken(_farmer, _path, _amountBNB) {
-  router = await IPancakeRouter02.at("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F");
+async function swapBNBToToken(_farmer, _path, _amountBNB, _newRouter) {
+  if (_newRouter) {
+    router = await IPancakeRouter02.at("0x10ED43C718714eb63d5aA57B78B54704E256024E");
+  } else {
+    router = await IPancakeRouter02.at("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F");
+  }
   await router.swapExactETHForTokens(
     0,
     _path,
@@ -198,8 +202,12 @@ async function wrapBNB(_farmer, _amount) {
   await wbnb.deposit({value:_amount, from:_farmer});
 }
 
-async function addLiquidity(_farmer, _token0, _token1, _amount0, _amount1) {
-  router = await IPancakeRouter02.at("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F");
+async function addLiquidity(_farmer, _token0, _token1, _amount0, _amount1, _newRouter) {
+  if (_newRouter) {
+    router = await IPancakeRouter02.at("0x10ED43C718714eb63d5aA57B78B54704E256024E");
+  } else {
+    router = await IPancakeRouter02.at("0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F");
+  }
   if (_token0 == "BNB") {
     wrapBNB(_farmer, _amount0);
     _token0 = await IBEP20.at("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
