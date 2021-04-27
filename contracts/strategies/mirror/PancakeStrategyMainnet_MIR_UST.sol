@@ -14,7 +14,7 @@ contract PancakeStrategyMainnet_MIR_UST is PancakeMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xf64a269F0A06dA07D23F43c1Deb217101ee6Bee7);
+    address underlying = address(0x89666d026696660e93Bf6edf57B71A68615768B7);
     address mir = address(0x5B6DcF557E2aBE2323c48445E8CC948910d8c2c9);
     address ust = address(0x23396cF899Ca06c4472205fC903bDB4de249D6fC);
     address cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
@@ -26,7 +26,7 @@ contract PancakeStrategyMainnet_MIR_UST is PancakeMasterChefStrategy {
       _vault,
       address(0x73feaa1eE314F8c655E354234017bE2193C9E24E), // master chef contract
       cake,
-      102,  // Pool id
+      329,  // Pool id
       true // is LP asset
     );
     pancakeswapRoutes[mir] = [cake, wbnb, busd, ust, mir];
