@@ -50,7 +50,7 @@ describe("BSC Mainnet Ellipsis BTC", function() {
   async function setupBalance(){
     btcb = await IBEP20.at(btcbAddr);
     liquidityPool = await ILiquidityPool.at(epsBTCPoolAddr);
-    await swapBNBToToken(farmer1, [wbnb, btcbAddr], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, btcbAddr], "100" + "000000000000000000", true);
     farmerBtcbBalance = await btcb.balanceOf(farmer1);
     await btcb.approve(epsBTCPoolAddr, farmerBtcbBalance, {from: farmer1});
     await liquidityPool.add_liquidity([farmerBtcbBalance, 0], 0, {from: farmer1});

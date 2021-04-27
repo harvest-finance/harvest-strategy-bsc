@@ -21,7 +21,7 @@ contract EllipsisFUSDTStrategy is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
-  address constant public pancakeswapRouterV2 = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
+  address constant public pancakeswapRouterV2 = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
   address constant public busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
   address constant public ice = address(0xf16e81dce15B08F326220742020379B855B87DF9);
   address constant public feeDistribution = address(0x4076CC26EFeE47825917D0feC3A79d0bB9a6bB5c);
