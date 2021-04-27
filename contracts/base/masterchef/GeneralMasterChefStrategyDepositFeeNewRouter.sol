@@ -1,10 +1,9 @@
-//SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: MIT
 
-pragma solidity 0.6.12;
+pragma solidity >=0.6.0;
 
-import "../interface/ILpTokenStaker.sol";
-import "./IBTCPoolDeposit.sol";
-import "../interface/IMultiFeeDistribution.sol";
+import "./interface/IMasterChefDepositFee.sol";
+import "../interface/IStrategy.sol";
 
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/IBEP20.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
@@ -12,27 +11,27 @@ import "@pancakeswap/pancake-swap-lib/contracts/token/BEP20/SafeBEP20.sol";
 import "@openzeppelin/contracts-upgradeable/math/MathUpgradeable.sol";
 import "@pancakeswap/pancake-swap-lib/contracts/math/SafeMath.sol";
 
-import "../../../base/upgradability/BaseUpgradeableStrategy.sol";
-import "../../../base/interface/pancakeswap/IPancakePair.sol";
-import "../../../base/interface/pancakeswap/IPancakeRouter02.sol";
+import "../interface/IVault.sol";
+import "../upgradability/BaseUpgradeableStrategy.sol";
+import "../interface/pancakeswap/IPancakePair.sol";
+import "../interface/pancakeswap/IPancakeRouter02.sol";
 
-contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
+contract GeneralMasterChefStrategyDepositFeeNewRouter is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
   address constant public pancakeswapRouterV2 = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
-  address constant public btcb = address(0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c);
-  address constant public feeDistribution = address(0x4076CC26EFeE47825917D0feC3A79d0bB9a6bB5c);
 
   // additional storage slots (on top of BaseUpgradeableStrategy ones) are defined here
   bytes32 internal constant _POOLID_SLOT = 0x3fd729bfa2e28b7806b03a6e014729f59477b530f995be4d51defc9dad94810b;
-  bytes32 internal constant _LP_SLOT = 0x52fa11fe6490ae4f804cf68cc716afb013e57c91fe13ef62a3660c3d209b32e2;
+  bytes32 internal constant _IS_LP_ASSET_SLOT = 0xc2f3dabf55b1bdda20d5cf5fcba9ba765dfc7c9dbaf28674ce46d43d60d58768;
 
-  address[] public pancake_EPS2BTCB;
+  // this would be reset on each upgrade
+  mapping (address => address[]) public pancakeswapRoutes;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
-    assert(_LP_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.LP")) - 1));
+    assert(_IS_LP_ASSET_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.isLpAsset")) - 1));
   }
 
   function initializeStrategy(
@@ -41,8 +40,8 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
     address _vault,
     address _rewardPool,
     address _rewardToken,
-    address _liquidityPool,
-    uint256 _poolID
+    uint256 _poolID,
+    bool _isLpToken
   ) public initializer {
 
     BaseUpgradeableStrategy.initialize(
@@ -59,10 +58,22 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
     );
 
     address _lpt;
-    (_lpt,,,,) = ILpTokenStaker(rewardPool()).poolInfo(_poolID);
+    (_lpt,,,,) = IMasterChefDepositFee(rewardPool()).poolInfo(_poolID);
     require(_lpt == underlying(), "Pool Info does not match underlying");
     _setPoolId(_poolID);
-    _setLiquidityPool(_liquidityPool);
+
+    if (_isLpToken) {
+      address uniLPComponentToken0 = IPancakePair(underlying()).token0();
+      address uniLPComponentToken1 = IPancakePair(underlying()).token1();
+
+      // these would be required to be initialized separately by governance
+      pancakeswapRoutes[uniLPComponentToken0] = new address[](0);
+      pancakeswapRoutes[uniLPComponentToken1] = new address[](0);
+    } else {
+      pancakeswapRoutes[underlying()] = new address[](0);
+    }
+
+    setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
   function depositArbCheck() public pure returns(bool) {
@@ -70,7 +81,7 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
   }
 
   function rewardPoolBalance() internal view returns (uint256 bal) {
-      (bal,) = ILpTokenStaker(rewardPool()).userInfo(poolId(), address(this));
+      (bal,) = IMasterChefDepositFee(rewardPool()).userInfo(poolId(), address(this));
   }
 
   function unsalvagableTokens(address token) public view returns (bool) {
@@ -78,11 +89,14 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
   }
 
   function enterRewardPool() internal {
+    uint16 depositFee;
+    (,,,,depositFee) = IMasterChefDepositFee(rewardPool()).poolInfo(poolId());
+    require(depositFee == 0, "Deposit fee is non-zero");
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
     IBEP20(underlying()).safeApprove(rewardPool(), 0);
     IBEP20(underlying()).safeApprove(rewardPool(), entireBalance);
 
-    ILpTokenStaker(rewardPool()).deposit(poolId(), entireBalance);
+    IMasterChefDepositFee(rewardPool()).deposit(poolId(), entireBalance);
   }
 
   /*
@@ -91,7 +105,8 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
   *   The function is only used for emergency to exit the pool
   */
   function emergencyExit() public onlyGovernance {
-    ILpTokenStaker(rewardPool()).emergencyWithdraw(poolId());
+    uint256 bal = rewardPoolBalance();
+    IMasterChefDepositFee(rewardPool()).withdraw(poolId(), bal);
     _setPausedInvesting(true);
   }
 
@@ -102,14 +117,14 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
     _setPausedInvesting(false);
   }
 
-  function setLiquidationPath(address [] memory _route) public onlyGovernance {
+  function setLiquidationPath(address _token, address [] memory _route) public onlyGovernance {
     require(_route[0] == rewardToken(), "Path should start with rewardToken");
-    pancake_EPS2BTCB = _route;
+    require(_route[_route.length-1] == _token, "Path should end with given Token");
+    pancakeswapRoutes[_token] = _route;
   }
 
   // We assume that all the tradings can be done on Pancakeswap
-  function _liquidateReward() internal {
-    uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
+  function _liquidateReward(uint256 rewardBalance) internal {
     if (!sell() || rewardBalance < sellFloor()) {
       // Profits can be disabled for possible simplified and rapid exit
       emit ProfitsNotCollected(sell(), rewardBalance < sellFloor());
@@ -130,38 +145,77 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
     // we can accept 1 as minimum because this is called only by a trusted role
     uint256 amountOutMin = 1;
 
-    IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
-      remainingRewardBalance,
-      amountOutMin,
-      pancake_EPS2BTCB,
-      address(this),
-      block.timestamp
-    );
-  }
+    if (isLpAsset()) {
+      address uniLPComponentToken0 = IPancakePair(underlying()).token0();
+      address uniLPComponentToken1 = IPancakePair(underlying()).token1();
 
-  function claimAndLiquidateReward() internal {
-    uint256[] memory pids = new uint256[](1);
-    pids[0] = poolId();
-    ILpTokenStaker(rewardPool()).claim(pids);
-    IMultiFeeDistribution(feeDistribution).exit();
-    _liquidateReward();
-    if (IBEP20(btcb).balanceOf(address(this)) > 0) {
-      btcEpsFromBtcb();
+      uint256 toToken0 = remainingRewardBalance.div(2);
+      uint256 toToken1 = remainingRewardBalance.sub(toToken0);
+
+      uint256 token0Amount;
+
+      if (pancakeswapRoutes[uniLPComponentToken0].length > 1) {
+        // if we need to liquidate the token0
+        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+          toToken0,
+          amountOutMin,
+          pancakeswapRoutes[uniLPComponentToken0],
+          address(this),
+          block.timestamp
+        );
+        token0Amount = IBEP20(uniLPComponentToken0).balanceOf(address(this));
+      } else {
+        // otherwise we assme token0 is the reward token itself
+        token0Amount = toToken0;
+      }
+
+      uint256 token1Amount;
+
+      if (pancakeswapRoutes[uniLPComponentToken1].length > 1) {
+        // sell reward token to token1
+        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+          toToken1,
+          amountOutMin,
+          pancakeswapRoutes[uniLPComponentToken1],
+          address(this),
+          block.timestamp
+        );
+        token1Amount = IBEP20(uniLPComponentToken1).balanceOf(address(this));
+      } else {
+        token1Amount = toToken1;
+      }
+
+      // provide token0 and token1 to Pancake
+      IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, 0);
+      IBEP20(uniLPComponentToken0).safeApprove(pancakeswapRouterV2, token0Amount);
+
+      IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, 0);
+      IBEP20(uniLPComponentToken1).safeApprove(pancakeswapRouterV2, token1Amount);
+
+      // we provide liquidity to Pancake
+      uint256 liquidity;
+      (,,liquidity) = IPancakeRouter02(pancakeswapRouterV2).addLiquidity(
+        uniLPComponentToken0,
+        uniLPComponentToken1,
+        token0Amount,
+        token1Amount,
+        1,  // we are willing to take whatever the pair gives us
+        1,  // we are willing to take whatever the pair gives us
+        address(this),
+        block.timestamp
+      );
+    } else {
+      if (underlying() != rewardToken()) {
+        IPancakeRouter02(pancakeswapRouterV2).swapExactTokensForTokens(
+          remainingRewardBalance,
+          amountOutMin,
+          pancakeswapRoutes[underlying()],
+          address(this),
+          block.timestamp
+        );
+      }
     }
   }
-
-  function btcEpsFromBtcb() internal {
-    uint256 btcbBalance = IBEP20(btcb).balanceOf(address(this));
-    if (btcbBalance > 0) {
-      IBEP20(btcb).safeApprove(liquidityPool(), 0);
-      IBEP20(btcb).safeApprove(liquidityPool(), btcbBalance);
-
-      // we can accept 0 as minimum, this will be called only by trusted roles
-      uint256 minimum = 0;
-      IBTCPoolDeposit(liquidityPool()).add_liquidity([btcbBalance, 0], minimum);
-    }
-  }
-
 
   /*
   *   Stakes everything the strategy holds into the reward pool
@@ -179,9 +233,12 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
   */
   function withdrawAllToVault() public restricted {
     if (address(rewardPool()) != address(0)) {
-      claimAndLiquidateReward();
       uint256 bal = rewardPoolBalance();
-      ILpTokenStaker(rewardPool()).withdraw(poolId(), bal);
+      IMasterChefDepositFee(rewardPool()).withdraw(poolId(), bal);
+    }
+    if (underlying() != rewardToken()) {
+      uint256 rewardBalance = IBEP20(rewardToken()).balanceOf(address(this));
+      _liquidateReward(rewardBalance);
     }
     IBEP20(underlying()).safeTransfer(vault(), IBEP20(underlying()).balanceOf(address(this)));
   }
@@ -199,7 +256,7 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
       // for the peace of mind (in case something gets changed in between)
       uint256 needToWithdraw = amount.sub(entireBalance);
       uint256 toWithdraw = MathUpgradeable.min(rewardPoolBalance(), needToWithdraw);
-      ILpTokenStaker(rewardPool()).withdraw(poolId(), toWithdraw);
+      IMasterChefDepositFee(rewardPool()).withdraw(poolId(), toWithdraw);
     }
 
     IBEP20(underlying()).safeTransfer(vault(), amount);
@@ -241,8 +298,13 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
   function doHardWork() external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
-      claimAndLiquidateReward();
+      uint256 rewardBalanceBefore = IBEP20(rewardToken()).balanceOf(address(this));
+      IMasterChefDepositFee(rewardPool()).withdraw(poolId(), 0);
+      uint256 rewardBalanceAfter = IBEP20(rewardToken()).balanceOf(address(this));
+      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
+      _liquidateReward(claimedReward);
     }
+
     investAllUnderlying();
   }
 
@@ -261,7 +323,7 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
     _setSellFloor(floor);
   }
 
-  // rewards pool ID
+  // masterchef rewards pool ID
   function _setPoolId(uint256 _value) internal {
     setUint256(_POOLID_SLOT, _value);
   }
@@ -270,15 +332,19 @@ contract EllipsisBTCStrategy is BaseUpgradeableStrategy {
     return getUint256(_POOLID_SLOT);
   }
 
-  function _setLiquidityPool(address _address) internal {
-    setAddress(_LP_SLOT, _address);
-  }
-
-  function liquidityPool() public virtual view returns (address) {
-    return getAddress(_LP_SLOT);
+  function isLpAsset() public view returns (bool) {
+    return getBoolean(_IS_LP_ASSET_SLOT);
   }
 
   function finalizeUpgrade() external onlyGovernance {
     _finalizeUpgrade();
+    // reset the liquidation paths
+    // they need to be re-set manually
+    if (isLpAsset()) {
+      pancakeswapRoutes[IPancakePair(underlying()).token0()] = new address[](0);
+      pancakeswapRoutes[IPancakePair(underlying()).token1()] = new address[](0);
+    } else {
+      pancakeswapRoutes[underlying()] = new address[](0);
+    }
   }
 }

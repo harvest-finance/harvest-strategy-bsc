@@ -2,9 +2,9 @@
 
 pragma solidity 0.6.12;
 
-import "../../base/masterchef/GeneralMasterChefStrategy.sol";
+import "../../base/masterchef/GeneralMasterChefStrategyNewRouter.sol";
 
-contract BeltStrategyMainnet_BELT_BNB is GeneralMasterChefStrategy {
+contract BeltStrategyMainnet_BELT_BNB is GeneralMasterChefStrategyNewRouter {
 
   address public belt_bnb_unused; // just a differentiator for the bytecode
 
@@ -14,16 +14,16 @@ contract BeltStrategyMainnet_BELT_BNB is GeneralMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0x83B92D283cd279fF2e057BD86a95BdEfffED6faa);
+    address underlying = address(0xF3Bc6FC080ffCC30d93dF48BFA2aA14b869554bb);
     address belt = address(0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f);
     address wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
-    GeneralMasterChefStrategy.initializeStrategy(
+    GeneralMasterChefStrategyNewRouter.initializeStrategy(
       _storage,
       underlying,
       _vault,
       address(0xD4BbC80b9B102b77B21A06cb77E954049605E6c1), // master chef contract
       belt,
-      2,  // Pool id
+      11,  // Pool id
       true // is LP asset
     );
     pancakeswapRoutes[wbnb] = [belt, wbnb];

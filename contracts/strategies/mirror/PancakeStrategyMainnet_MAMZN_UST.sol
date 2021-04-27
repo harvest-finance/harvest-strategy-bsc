@@ -14,7 +14,7 @@ contract PancakeStrategyMainnet_MAMZN_UST is PancakeMasterChefStrategy {
     address _storage,
     address _vault
   ) public initializer {
-    address underlying = address(0xc92Dc34665c8a21f98E1E38474580b61b4f3e1b9);
+    address underlying = address(0xC05654C66756eBB82c518598c5f1ea1a0199a563);
     address mamzn = address(0x3947B992DC0147D2D89dF0392213781b04B25075);
     address ust = address(0x23396cF899Ca06c4472205fC903bDB4de249D6fC);
     address cake = address(0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82);
@@ -26,7 +26,7 @@ contract PancakeStrategyMainnet_MAMZN_UST is PancakeMasterChefStrategy {
       _vault,
       address(0x73feaa1eE314F8c655E354234017bE2193C9E24E), // master chef contract
       cake,
-      62,  // Pool id
+      292,  // Pool id
       true // is LP asset
     );
     pancakeswapRoutes[mamzn] = [cake, wbnb, busd, ust, mamzn];

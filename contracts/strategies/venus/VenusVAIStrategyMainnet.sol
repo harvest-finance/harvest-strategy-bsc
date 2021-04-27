@@ -17,7 +17,7 @@ contract VenusVAIStrategyMainnet is BaseUpgradeableStrategy {
   using SafeMath for uint256;
   using SafeBEP20 for IBEP20;
 
-  address constant public pancakeRouterV2 = address(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
+  address constant public pancakeRouterV2 = address(0x10ED43C718714eb63d5aA57B78B54704E256024E);
   address[] public liquidationPath;
 
   constructor() public BaseUpgradeableStrategy() {

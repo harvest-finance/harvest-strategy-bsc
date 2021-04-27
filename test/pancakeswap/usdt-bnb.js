@@ -40,15 +40,15 @@ describe("BSC Mainnet Pancake USDT/BNB", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0x20bCC3b8a0091dDac2d0BC30F68E6CBb97de59Cd");
+    underlying = await IBEP20.at("0x16b9a82891338f9bA80E2D6970FddA79D1eb0daE");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
     token1 = await IBEP20.at(token1Addr);
-    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000", true);
     farmerToken1Balance = await token1.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance);
+    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance, true);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
