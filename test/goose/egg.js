@@ -45,7 +45,7 @@ describe("BSC Mainnet Goose EGG", function() {
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000", false);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

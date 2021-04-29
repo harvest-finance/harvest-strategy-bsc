@@ -44,9 +44,9 @@ describe("BSC Mainnet Pancake CAKE", function() {
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000", true);
     farmer1Balance = await underlying.balanceOf(farmer1);
-    await swapBNBToToken(farmer2, [wbnb, underlying.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer2, [wbnb, underlying.address], "100" + "000000000000000000", true);
     farmer2Balance = await underlying.balanceOf(farmer2);
 
   }

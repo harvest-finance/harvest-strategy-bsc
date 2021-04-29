@@ -48,9 +48,9 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
 
   async function setupBalance(){
     token1 = await IBEP20.at(token1Addr);
-    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, token1.address], "100" + "000000000000000000", false);
     farmerToken1Balance = await token1.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance);
+    await addLiquidity(farmer1, "BNB", token1, "100" + "000000000000000000", farmerToken1Balance, false);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

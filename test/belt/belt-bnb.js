@@ -42,15 +42,15 @@ describe("BSC Mainnet Belt BELT/BNB", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0x83B92D283cd279fF2e057BD86a95BdEfffED6faa");
+    underlying = await IBEP20.at("0xF3Bc6FC080ffCC30d93dF48BFA2aA14b869554bb");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
     belt = await IBEP20.at(beltAddr);
-    await swapBNBToToken(farmer1, [wbnb, beltAddr], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, beltAddr], "100" + "000000000000000000", true);
     farmerBELTBalance = await belt.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", belt, "100" + "000000000000000000", farmerBELTBalance);
+    await addLiquidity(farmer1, "BNB", belt, "100" + "000000000000000000", farmerBELTBalance, true);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -67,16 +67,16 @@ describe("BSC Mainnet Belt BELT/BNB", function() {
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
 
     await setupExternalContracts();
-    [controller, vault, strategy,,feeForwarder] = await setupCoreProtocol({
+    [controller, vault, strategy] = await setupCoreProtocol({
       "existingVaultAddress": null,
       "strategyArtifact": Strategy,
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
+      "liquidationPath": [beltAddr, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
-    await feeForwarder.setConversionPath(beltAddr, eth, [beltAddr, wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();

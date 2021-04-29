@@ -4,12 +4,14 @@ const {
   impersonates,
   setupCoreProtocol,
   depositVault,
-  swapBNBToToken
+  swapBNBToToken,
+  wrapBNB
 } = require("../utilities/hh-utils.js");
 
 const { send } = require("@openzeppelin/test-helpers");
 const BigNumber = require("bignumber.js");
 const IBEP20 = artifacts.require("IBEP20");
+const IPancakeRouter02 = artifacts.require("IPancakeRouter02");
 
 //const Strategy = artifacts.require("");
 const Strategy = artifacts.require("PopsicleStrategtMainnet_ICE");
@@ -45,7 +47,13 @@ describe("BSC Mainnet Popsicle ICE", function() {
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, underlying.address], "100" + "000000000000000000");
+    router = await IPancakeRouter02.at("0x1b02dA8Cb0d097eB8D57A175b88c7D8b47997506"); //sushi router
+    await router.swapExactETHForTokens(
+      0,
+      [wbnb, underlying.address],
+      farmer1,
+      Date.now() + 900000,
+      { value:"100" + "000000000000000000", from: farmer1 });
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 
@@ -68,7 +76,7 @@ describe("BSC Mainnet Popsicle ICE", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [iceAddr, wbnb, eth],
+      "liquidationPath": [wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
