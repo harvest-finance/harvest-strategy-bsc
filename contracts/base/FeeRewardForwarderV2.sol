@@ -22,6 +22,7 @@ contract FeeRewardForwarderV2 is Governable {
   address constant public space = address(0x0abd3E3502c15ec252f90F64341cbA74a24fba06);
   address constant public belt = address(0xE0e514c71282b6f4e823703a39374Cf58dc3eA4f);
   address constant public eps = address(0xA7f552078dcC247C2684336020c03648500C6d9F);
+  address constant public ice = address(0xf16e81dce15B08F326220742020379B855B87DF9);
   // wbnb
   address constant public wbnb = address(0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c);
   address constant public busd = address(0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56);
@@ -51,6 +52,7 @@ contract FeeRewardForwarderV2 is Governable {
     routes[eps][eth] = [eps, wbnb, eth];
     routes[wbnb][eth] = [wbnb, eth];
     routes[busd][eth] = [busd, wbnb, eth];
+    routes[ice][eth] = [ice, wbnb, eth];
 
     routers[cake][eth] = pancakeswapRouterNew;
     routers[xvs][eth] = pancakeswapRouterNew;
@@ -61,6 +63,7 @@ contract FeeRewardForwarderV2 is Governable {
     routers[eps][eth] = pancakeswapRouterNew;
     routers[wbnb][eth] = pancakeswapRouterNew;
     routers[busd][eth] = pancakeswapRouterNew;
+    routers[ice][eth] = pancakeswapRouterOld;
   }
 
   /*
