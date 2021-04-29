@@ -42,18 +42,18 @@ describe("BSC Mainnet Pancake MAMZN/UST", function() {
   let strategy;
 
   async function setupExternalContracts() {
-    underlying = await IBEP20.at("0xc92Dc34665c8a21f98E1E38474580b61b4f3e1b9");
+    underlying = await IBEP20.at("0xC05654C66756eBB82c518598c5f1ea1a0199a563");
     console.log("Fetching Underlying at: ", underlying.address);
   }
 
   async function setupBalance(){
     token1 = await IBEP20.at(token1Addr);
     ust = await IBEP20.at(ustAddr);
-    await swapBNBToToken(farmer1, [wbnb, busd, ustAddr, token1Addr], "100" + "000000000000000000");
-    await swapBNBToToken(farmer1, [wbnb, busd, ustAddr], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, busd, ustAddr, token1Addr], "100" + "000000000000000000", true);
+    await swapBNBToToken(farmer1, [wbnb, busd, ustAddr], "100" + "000000000000000000", true);
     farmerToken1Balance = await token1.balanceOf(farmer1);
     farmerUstBalance = await ust.balanceOf(farmer1);
-    await addLiquidity(farmer1, ust, token1, farmerUstBalance, farmerToken1Balance);
+    await addLiquidity(farmer1, ust, token1, farmerUstBalance, farmerToken1Balance, true);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

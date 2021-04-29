@@ -47,9 +47,9 @@ describe("BSC Mainnet Swirl SWIRL/BNB", function() {
 
   async function setupBalance(){
     swirl = await IBEP20.at(swirlAddr);
-    await swapBNBToToken(farmer1, [wbnb, swirlAddr], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, swirlAddr], "100" + "000000000000000000", false);
     farmerSwirlBalance = await swirl.balanceOf(farmer1);
-    await addLiquidity(farmer1, "BNB", swirl, "100" + "000000000000000000", farmerSwirlBalance);
+    await addLiquidity(farmer1, "BNB", swirl, "100" + "000000000000000000", farmerSwirlBalance, false);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

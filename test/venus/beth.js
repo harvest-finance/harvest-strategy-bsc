@@ -44,7 +44,7 @@ describe("BSC Mainnet Venus BETH", function() {
   }
 
   async function setupBalance(){
-    await swapBNBToToken(farmer1, [wbnb, eth, underlying.address], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, eth, underlying.address], "100" + "000000000000000000", true);
     farmerBalance = await underlying.balanceOf(farmer1);
   }
 

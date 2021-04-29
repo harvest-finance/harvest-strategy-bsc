@@ -50,7 +50,7 @@ describe("BSC Mainnet Ellipsis 3Pool", function() {
   async function setupBalance(){
     busd = await IBEP20.at(busdAddr);
     liquidityPool = await ILiquidityPool.at(eps3PoolAddr);
-    await swapBNBToToken(farmer1, [wbnb, busdAddr], "100" + "000000000000000000");
+    await swapBNBToToken(farmer1, [wbnb, busdAddr], "100" + "000000000000000000", true);
     farmerBusdBalance = await busd.balanceOf(farmer1);
     await busd.approve(eps3PoolAddr, farmerBusdBalance, {from: farmer1});
     await liquidityPool.add_liquidity([farmerBusdBalance, 0, 0], 0, {from: farmer1});
