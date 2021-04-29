@@ -3,6 +3,7 @@ const addresses = require("../test-config.js");
 const IController = artifacts.require("IController");
 const IFeeRewardForwarder = artifacts.require("IFeeRewardForwarder");
 const IPancakeRouter02 = artifacts.require("IPancakeRouter02");
+const IValueLiquidRouter = artifacts.require("IValueLiquidRouter");
 const IBEP20 = artifacts.require("IBEP20");
 const WBNB = artifacts.require("WBNB")
 
@@ -226,11 +227,45 @@ async function addLiquidity(_farmer, _token0, _token1, _amount0, _amount1, _newR
     { from: _farmer });
 }
 
+async function swapBNBToTokenValue(_farmer, _tokenTo, _path, _amountBNB) {
+  router = await IValueLiquidRouter.at("0xb7e19a1188776f32E8C2B790D9ca578F2896Da7C");
+  await router.swapExactETHForTokens(
+    _tokenTo,
+    0,
+    _path,
+    _farmer,
+    Date.now() + 900000,
+    { value:_amountBNB, from: _farmer });
+}
+
+async function addLiquidityValue(_farmer, _token0, _token1, _amount0, _amount1, _pair) {
+  router = await IValueLiquidRouter.at("0xb7e19a1188776f32E8C2B790D9ca578F2896Da7C");
+  if (_token0 == "BNB") {
+    wrapBNB(_farmer, _amount0);
+    _token0 = await IBEP20.at("0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c");
+  }
+  await _token0.approve(router.address, _amount0, { from:_farmer});
+  await _token1.approve(router.address, _amount1, { from:_farmer});
+  await router.addLiquidity(
+    _pair.address,
+    _token0.address,
+    _token1.address,
+    _amount0,
+    _amount1,
+    0,
+    0,
+    _farmer,
+    Date.now() + 900000,
+    { from: _farmer });
+}
+
 module.exports = {
   impersonates,
   setupCoreProtocol,
   depositVault,
   swapBNBToToken,
   wrapBNB,
-  addLiquidity
+  addLiquidity,
+  swapBNBToTokenValue,
+  addLiquidityValue
 };
