@@ -175,7 +175,7 @@ async function setupCoreProtocol(config) {
     console.log("Strategy and vault added to Controller.");
   }
 
-  return [controller, vault, strategy, rewardPool, feeRewardForwarder];
+  return [controller, vault, strategy, rewardPool];
 }
 
 async function depositVault(_farmer, _underlying, _vault, _amount) {
