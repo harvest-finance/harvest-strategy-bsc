@@ -76,10 +76,11 @@ describe("BSC Mainnet Belt Venus", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
+      "liquidationPath": {"path": [beltAddr, wbnb, eth],
+                          "router": "PancakeRouterNew"}
     });
 
     await strategy.setSellFloor(0, {from:governance});
-    await feeForwarder.setConversionPath(belt, eth, [belt, wbnb, eth], {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();

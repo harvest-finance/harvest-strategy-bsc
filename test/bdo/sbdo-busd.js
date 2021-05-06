@@ -76,7 +76,8 @@ describe("BSC Mainnet bDollar SBDO/BUSD", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [sbdoAddr, busdAddr, wbnb, eth],
+      "liquidationPath": {"path": [sbdoAddr, busdAddr, wbnb, eth],
+                          "router": "PancakeRouterOld"}
     });
 
     await strategy.setSellFloor(0, {from:governance});

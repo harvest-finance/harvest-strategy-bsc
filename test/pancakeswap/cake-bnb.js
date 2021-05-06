@@ -101,6 +101,11 @@ describe("BSC Mainnet Pancake CAKE/BNB", function() {
         console.log("growth: ", newSharePrice.toFixed() / oldSharePrice.toFixed());
 
         await Utils.advanceNBlock(blocksPerHour);
+
+        farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*1);
+        await vault.withdraw(farmerfBalance, {from: farmer1});
+        let farmerUnderlyingBalance = new BigNumber(await underlying.balanceOf(farmer1));
+        await depositVault(farmer1, underlying, vault, farmerUnderlyingBalance);
       }
       await vault.withdraw(new BigNumber(await vault.balanceOf(farmer1)).toFixed(), { from: farmer1 });
       let farmerNewBalance = new BigNumber(await underlying.balanceOf(farmer1));

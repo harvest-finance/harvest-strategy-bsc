@@ -29,6 +29,7 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
   // this would be reset on each upgrade
   mapping (address => address[]) public sushiswapRoutes;
   address[] public ice2bnb;
+  uint256 public pendingIce;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
@@ -77,6 +78,11 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
     setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
+  modifier updatePendingIce() {
+    _;
+    pendingIce = IBEP20(ice).balanceOf(address(this));
+  }
+
   function depositArbCheck() public pure returns(bool) {
     return true;
   }
@@ -89,7 +95,7 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
     return (token == rewardToken() || token == underlying());
   }
 
-  function enterRewardPool() internal {
+  function enterRewardPool() updatePendingIce internal {
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
     IBEP20(underlying()).safeApprove(rewardPool(), 0);
     IBEP20(underlying()).safeApprove(rewardPool(), entireBalance);
@@ -102,7 +108,7 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
   *   Governance can exit the pool properly
   *   The function is only used for emergency to exit the pool
   */
-  function emergencyExit() public onlyGovernance {
+  function emergencyExit() updatePendingIce public onlyGovernance {
     uint256 bal = rewardPoolBalance();
     IMasterChef(rewardPool()).withdraw(poolId(), bal);
     _setPausedInvesting(true);
@@ -242,7 +248,7 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
   /*
   *   Withdraws all the asset to the vault
   */
-  function withdrawAllToVault() public restricted {
+  function withdrawAllToVault() updatePendingIce public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
       if (bal != 0) {
@@ -259,7 +265,7 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
   /*
   *   Withdraws all the asset to the vault
   */
-  function withdrawToVault(uint256 amount) public restricted {
+  function withdrawToVault(uint256 amount) updatePendingIce public restricted {
     // Typically there wouldn't be any amount here
     // however, it is possible because of the emergencyExit
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
@@ -308,13 +314,13 @@ contract PopsicleStrategy is BaseUpgradeableStrategy {
   *   calling `investAllUnderlying()` affectively blocks the usage of `doHardWork`
   *   when the investing is being paused by governance.
   */
-  function doHardWork() external onlyNotPausedInvesting restricted {
+  function doHardWork() updatePendingIce external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
       uint256 rewardBalanceBefore = IBEP20(ice).balanceOf(address(this));
       IMasterChef(rewardPool()).withdraw(poolId(), 0);
       uint256 rewardBalanceAfter = IBEP20(ice).balanceOf(address(this));
-      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
+      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore).add(pendingIce);
       _liquidateReward(claimedReward);
     }
 

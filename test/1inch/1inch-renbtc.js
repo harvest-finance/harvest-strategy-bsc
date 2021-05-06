@@ -101,7 +101,6 @@ describe("BSC Mainnet 1INCH 1INCH/renBTC", function() {
       "strategyArtifact": Strategy,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [wbnb, eth],
     });
 
     await strategy.setSellFloorAndSlippages(0, 1, 10, {from:governance});

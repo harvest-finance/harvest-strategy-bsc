@@ -28,6 +28,7 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
 
   // this would be reset on each upgrade
   mapping (address => address[]) public pancakeswapRoutes;
+  uint256 public pendingReward;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
@@ -76,6 +77,11 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
     setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
+  modifier updatePendingReward() {
+    _;
+    pendingReward = IBEP20(rewardToken()).balanceOf(address(this));
+  }
+
   function depositArbCheck() public pure returns(bool) {
     return true;
   }
@@ -88,7 +94,7 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
     return (token == rewardToken() || token == underlying());
   }
 
-  function enterRewardPool() internal {
+  function enterRewardPool() updatePendingReward internal {
     uint16 depositFee;
     (,,,,depositFee) = IMasterChefDepositFee(rewardPool()).poolInfo(poolId());
     require(depositFee == 0, "Deposit fee is non-zero");
@@ -104,7 +110,7 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
   *   Governance can exit the pool properly
   *   The function is only used for emergency to exit the pool
   */
-  function emergencyExit() public onlyGovernance {
+  function emergencyExit() updatePendingReward public onlyGovernance {
     uint256 bal = rewardPoolBalance();
     IMasterChefDepositFee(rewardPool()).withdraw(poolId(), bal);
     _setPausedInvesting(true);
@@ -231,7 +237,7 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
   /*
   *   Withdraws all the asset to the vault
   */
-  function withdrawAllToVault() public restricted {
+  function withdrawAllToVault() updatePendingReward public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
       IMasterChefDepositFee(rewardPool()).withdraw(poolId(), bal);
@@ -246,7 +252,7 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
   /*
   *   Withdraws all the asset to the vault
   */
-  function withdrawToVault(uint256 amount) public restricted {
+  function withdrawToVault(uint256 amount) updatePendingReward public restricted {
     // Typically there wouldn't be any amount here
     // however, it is possible because of the emergencyExit
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
@@ -295,13 +301,13 @@ contract GeneralMasterChefStrategyDepositFee is BaseUpgradeableStrategy {
   *   calling `investAllUnderlying()` affectively blocks the usage of `doHardWork`
   *   when the investing is being paused by governance.
   */
-  function doHardWork() external onlyNotPausedInvesting restricted {
+  function doHardWork() updatePendingReward external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
       uint256 rewardBalanceBefore = IBEP20(rewardToken()).balanceOf(address(this));
       IMasterChefDepositFee(rewardPool()).withdraw(poolId(), 0);
       uint256 rewardBalanceAfter = IBEP20(rewardToken()).balanceOf(address(this));
-      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
+      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore).add(pendingReward);
       _liquidateReward(claimedReward);
     }
 

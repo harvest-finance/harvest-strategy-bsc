@@ -28,6 +28,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
 
   // this would be reset on each upgrade
   mapping (address => address[]) public pancakeswapRoutes;
+  uint256 public pendingReward;
 
   constructor() public BaseUpgradeableStrategy() {
     assert(_POOLID_SLOT == bytes32(uint256(keccak256("eip1967.strategyStorage.poolId")) - 1));
@@ -76,6 +77,11 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     setBoolean(_IS_LP_ASSET_SLOT, _isLpToken);
   }
 
+  modifier updatePendingReward() {
+    _;
+    pendingReward = IBEP20(rewardToken()).balanceOf(address(this));
+  }
+
   function depositArbCheck() public pure returns(bool) {
     return true;
   }
@@ -96,7 +102,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
     return (token == rewardToken() || token == underlying());
   }
 
-  function enterRewardPool() internal {
+  function enterRewardPool() updatePendingReward internal {
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
     IBEP20(underlying()).safeApprove(rewardPool(), 0);
     IBEP20(underlying()).safeApprove(rewardPool(), entireBalance);
@@ -113,7 +119,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   *   Governance can exit the pool properly
   *   The function is only used for emergency to exit the pool
   */
-  function emergencyExit() public onlyGovernance {
+  function emergencyExit() updatePendingReward public onlyGovernance {
     uint256 bal = rewardPoolBalance();
     exitRewardPool(bal);
     _setPausedInvesting(true);
@@ -248,7 +254,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   /*
   *   Withdraws all the asset to the vault
   */
-  function withdrawAllToVault() public restricted {
+  function withdrawAllToVault() updatePendingReward public restricted {
     if (address(rewardPool()) != address(0)) {
       uint256 bal = rewardPoolBalance();
       exitRewardPool(bal);
@@ -263,7 +269,7 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   /*
   *   Withdraws all the asset to the vault
   */
-  function withdrawToVault(uint256 amount) public restricted {
+  function withdrawToVault(uint256 amount) updatePendingReward public restricted {
     // Typically there wouldn't be any amount here
     // however, it is possible because of the emergencyExit
     uint256 entireBalance = IBEP20(underlying()).balanceOf(address(this));
@@ -312,13 +318,13 @@ contract PancakeMasterChefStrategy is BaseUpgradeableStrategy {
   *   calling `investAllUnderlying()` affectively blocks the usage of `doHardWork`
   *   when the investing is being paused by governance.
   */
-  function doHardWork() external onlyNotPausedInvesting restricted {
+  function doHardWork() updatePendingReward external onlyNotPausedInvesting restricted {
     uint256 bal = rewardPoolBalance();
     if (bal != 0) {
       uint256 rewardBalanceBefore = IBEP20(rewardToken()).balanceOf(address(this));
       _claimReward();
       uint256 rewardBalanceAfter = IBEP20(rewardToken()).balanceOf(address(this));
-      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore);
+      uint256 claimedReward = rewardBalanceAfter.sub(rewardBalanceBefore).add(pendingReward);
       _liquidateReward(claimedReward);
     }
 

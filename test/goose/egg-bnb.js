@@ -72,7 +72,6 @@ describe("BSC Mainnet Goose EGG/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eggAddr, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
