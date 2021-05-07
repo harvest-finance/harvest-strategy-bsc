@@ -15,7 +15,7 @@ const Strategy = artifacts.require("BeltSingleAssetStrategyMainnet_BeltBTCB");
 
 
 // Vanilla Mocha test. Increased compatibility with tools that integrate Mocha.
-describe("BSC Mainnet BeltBSC", function() {
+describe("BSC Mainnet BeltBTC", function() {
   let accounts;
 
   // external contracts
