@@ -73,7 +73,6 @@ describe("BSC Mainnet Ellipsis EPS/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eps, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});

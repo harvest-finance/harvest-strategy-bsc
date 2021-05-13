@@ -73,6 +73,8 @@ describe("BSC Mainnet Pancake CAKE", function() {
       "governance": governance,
     });
 
+    await strategy.setSellFloor(0, {from:governance});
+
     // whale send underlying to farmers
     await setupBalance();
   });
@@ -88,9 +90,9 @@ describe("BSC Mainnet Pancake CAKE", function() {
       let oldSharePrice;
       let newSharePrice;
       for (let i = 0; i < hours; i++) {
-        if (i==1) {
-          await depositVault(farmer2, underlying, vault, farmer2Balance);
-        }
+        // if (i==1) {
+        //   await depositVault(farmer2, underlying, vault, farmer2Balance);
+        // }
         console.log("loop ", i);
 
         oldSharePrice = new BigNumber(await vault.getPricePerFullShare());
@@ -102,6 +104,11 @@ describe("BSC Mainnet Pancake CAKE", function() {
         console.log("growth: ", newSharePrice.toFixed() / oldSharePrice.toFixed());
 
         await Utils.advanceNBlock(blocksPerHour);
+
+        farmerfBalance = new BigNumber(await vault.balanceOf(farmer1)/100*1);
+        await vault.withdraw(farmerfBalance, {from: farmer1});
+        let farmerUnderlyingBalance = new BigNumber(await underlying.balanceOf(farmer1));
+        await depositVault(farmer1, underlying, vault, farmerUnderlyingBalance);
       }
       await vault.withdraw(new BigNumber(await vault.balanceOf(farmer1)).toFixed(), { from: farmer1 });
       let farmerNewBalance = new BigNumber(await underlying.balanceOf(farmer1));

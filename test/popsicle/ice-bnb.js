@@ -100,10 +100,11 @@ describe("BSC Mainnet Popsicle ICE/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [wbnb, eth],
+      "liquidationPath": {"path": [wbnb, eth],
+                          "router": "PancakeRouterNew"}
     });
 
-    await strategy.setSellFloor(0, {from:governance});
+    await strategy.setSellFloor(1, {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();

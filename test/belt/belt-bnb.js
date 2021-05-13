@@ -73,7 +73,8 @@ describe("BSC Mainnet Belt BELT/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [beltAddr, wbnb, eth],
+      "liquidationPath": {"path": [beltAddr, wbnb, eth],
+                          "router": "PancakeRouterNew"}
     });
 
     await strategy.setSellFloor(0, {from:governance});

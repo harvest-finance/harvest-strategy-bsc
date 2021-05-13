@@ -1,7 +1,7 @@
 const makeVault = require("./make-vault.js");
 const addresses = require("../test-config.js");
 const IController = artifacts.require("IController");
-const IFeeRewardForwarder = artifacts.require("IFeeRewardForwarder");
+const IFeeRewardForwarder = artifacts.require("IFeeRewardForwarderV2");
 const IPancakeRouter02 = artifacts.require("IPancakeRouter02");
 const IBEP20 = artifacts.require("IBEP20");
 const WBNB = artifacts.require("WBNB")
@@ -149,11 +149,13 @@ async function setupCoreProtocol(config) {
   console.log("Strategy Deployed: ", strategy.address);
 
   if (config.liquidationPath) {
-    const path = config.liquidationPath;
+    const path = config.liquidationPath.path;
+    const router = addresses[config.liquidationPath.router];
     await feeRewardForwarder.setConversionPath(
       path[0],
       path[path.length - 1],
       path,
+      router,
       {from: config.governance}
     );
   }

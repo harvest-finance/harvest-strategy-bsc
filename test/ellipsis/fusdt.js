@@ -76,7 +76,6 @@ describe("BSC Mainnet Ellipsis FUSDT", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [eps, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});

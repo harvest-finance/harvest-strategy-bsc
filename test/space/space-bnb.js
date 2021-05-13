@@ -71,7 +71,6 @@ describe("BSC Mainnet Space SPACE/BNB", function() {
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,
-      "liquidationPath": [spaceAddr, wbnb, eth],
     });
 
     await strategy.setSellFloor(0, {from:governance});
