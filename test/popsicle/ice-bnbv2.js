@@ -102,7 +102,7 @@ describe("BSC Mainnet Popsicle ICE/BNB V2", function() {
       "governance": governance,
     });
 
-    await strategy.setSellFloor(0, {from:governance});
+    await strategy.setSellFloor(1, {from:governance});
 
     // whale send underlying to farmers
     await setupBalance();
