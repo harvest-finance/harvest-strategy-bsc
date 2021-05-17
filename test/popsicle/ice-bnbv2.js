@@ -93,10 +93,14 @@ describe("BSC Mainnet Popsicle ICE/BNB V2", function() {
     let etherGiver = accounts[9];
     await send.ether(etherGiver, governance, "100" + "000000000000000000")
 
+    oldStrategy = await Strategy.at("0xBcDf4EAec6166b94e54e2b1F0A4C2c30Cea834CA");
+    await oldStrategy.setSellFloor(1, {from:governance});
+
     await setupExternalContracts();
     [controller, vault, strategy] = await setupCoreProtocol({
-      "existingVaultAddress": null,
+      "existingVaultAddress": "0x1c4ADFf419F6b91E51D0aDe953C9BBf5D16A583F",
       "strategyArtifact": Strategy,
+      "announceStrategy": true,
       "strategyArtifactIsUpgradable": true,
       "underlying": underlying,
       "governance": governance,

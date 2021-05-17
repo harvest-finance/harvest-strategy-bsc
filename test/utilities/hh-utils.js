@@ -4,6 +4,7 @@ const IController = artifacts.require("IController");
 const IFeeRewardForwarder = artifacts.require("IFeeRewardForwarderV2");
 const IPancakeRouter02 = artifacts.require("IPancakeRouter02");
 const IBEP20 = artifacts.require("IBEP20");
+const Vault = artifacts.require("Vault");
 const WBNB = artifacts.require("WBNB")
 
 const Utils = require("./Utils.js");
